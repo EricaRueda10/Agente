@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FitAI Coach - Frontend
 
-## Getting Started
+Frontend de FitAI Coach construido con Next.js.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 18+ (recomendado: Node.js 20 o superior)
+- npm
+- Backend corriendo en http://localhost:8000
+
+## Levantar el proyecto
+
+Ejecuta estos comandos desde esta carpeta (frontend-app):
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Luego abre:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts disponibles
 
-## Learn More
+```bash
+npm run dev    # modo desarrollo
+npm run build  # build de produccion
+npm run start  # ejecutar build en produccion
+npm run lint   # linting
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Flujo completo (frontend + backend)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Este frontend hace peticiones POST a:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- http://localhost:8000/agente
 
-## Deploy on Vercel
+Por eso debes tener el backend activo al mismo tiempo.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Errores comunes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Error Cannot find module react o react/jsx-runtime
+	Solucion:
+
+```bash
+npm install
+npm run dev
+```
+
+2. Error de conexion al generar rutina
+	Causa: backend apagado o puerto diferente.
+	Solucion: confirma que FastAPI este corriendo en el puerto 8000.
+
+3. Error 500 desde backend
+	Causa frecuente: falta OPENAI_API_KEY.
+	Solucion: define la variable en el entorno del backend antes de levantar uvicorn.
