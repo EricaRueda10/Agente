@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CredentialResponse, GoogleLogin, googleLogout } from "@react-oauth/google";
 import FitCoachView, {
   ChatMessage,
   DiaPlan,
@@ -8,24 +9,74 @@ import FitCoachView, {
   ResultadoCoach,
 } from "./components/FitCoachView";
 
+type GoogleSessionUser = {
+  sub: string;
+  name: string;
+  email: string;
+  picture?: string;
+};
+
+const GOOGLE_USER_KEY = "fitai_google_user";
+const INITIAL_CHAT: ChatMessage[] = [
+  {
+    role: "assistant",
+    content:
+      "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana.",
+  },
+];
+
+const decodeJwtPayload = (jwt: string): Record<string, unknown> | null => {
+  try {
+    const payload = jwt.split(".")[1];
+    if (!payload) {
+      return null;
+    }
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const json = atob(padded);
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+};
+
+const mapGoogleUser = (payload: Record<string, unknown>): GoogleSessionUser | null => {
+  const sub = typeof payload.sub === "string" ? payload.sub : "";
+  const name = typeof payload.name === "string" ? payload.name : "";
+  const email = typeof payload.email === "string" ? payload.email : "";
+  const picture = typeof payload.picture === "string" ? payload.picture : undefined;
+
+  if (!sub || !email) {
+    return null;
+  }
+
+  return {
+    sub,
+    name: name || email,
+    email,
+    picture,
+  };
+};
+
 export default function Home() {
+  const googleClientEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
   const [mensaje, setMensaje] = useState("");
-  const [chat, setChat] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana.",
-    },
-  ]);
+  const [chat, setChat] = useState<ChatMessage[]>(INITIAL_CHAT);
   const [resultado, setResultado] = useState<ResultadoCoach | null>(null);
   const [intensidadActiva, setIntensidadActiva] = useState<Intensidad>("media");
   const [diaActivo, setDiaActivo] = useState<string>("");
   const [error, setError] = useState("");
+  const [errorAuth, setErrorAuth] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [authUser, setAuthUser] = useState<GoogleSessionUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
   const detallesEnCursoRef = useRef<Set<string>>(new Set());
   const detallesCargadosRef = useRef<Set<string>>(new Set());
+
+  const userIdActual = authUser ? `google:${authUser.sub}` : "";
+  const chatHabilitado = Boolean(authUser);
 
   const intentarParsearResultado = (valor: unknown): ResultadoCoach | null => {
     if (typeof valor !== "string") {
@@ -48,6 +99,66 @@ export default function Home() {
 
     return null;
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const stored = window.localStorage.getItem(GOOGLE_USER_KEY);
+    if (!stored) {
+      setAuthReady(true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as GoogleSessionUser;
+      if (parsed?.sub && parsed?.email) {
+        setAuthUser(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(GOOGLE_USER_KEY);
+    } finally {
+      setAuthReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
+    if (!authUser) {
+      setChat(INITIAL_CHAT);
+      setResultado(null);
+      setError("");
+      return;
+    }
+
+    const cargarContexto = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/progreso/contexto/${encodeURIComponent(`google:${authUser.sub}`)}`);
+        if (!res.ok) {
+          setChat(INITIAL_CHAT);
+          setResultado(null);
+          return;
+        }
+
+        const data = await res.json();
+        const contexto = data?.resultado;
+        if (contexto?.chat?.length) {
+          setChat(contexto.chat);
+        } else {
+          setChat(INITIAL_CHAT);
+        }
+        setResultado(contexto?.ultimo_resultado || null);
+      } catch {
+        setChat(INITIAL_CHAT);
+        setResultado(null);
+      }
+    };
+
+    void cargarContexto();
+  }, [authReady, authUser]);
 
   useEffect(() => {
     if (chatRef.current) {
@@ -184,6 +295,11 @@ export default function Home() {
   const enviarMensaje = async (e?: FormEvent) => {
     e?.preventDefault();
 
+    if (!chatHabilitado || !userIdActual) {
+      setError("Debes iniciar sesion con Google antes de hablar con el coach.");
+      return;
+    }
+
     if (!mensaje.trim()) {
       setError("Escribe un mensaje para conversar con tu coach.");
       return;
@@ -206,6 +322,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user_id: userIdActual || undefined,
           historial_chat: nuevoChat,
         }),
       });
@@ -339,8 +456,87 @@ export default function Home() {
 
   const tieneRutina = resultado?.estado === "rutina_lista";
 
+  const onGoogleSuccess = (credentialResponse: CredentialResponse) => {
+    const credential = credentialResponse.credential;
+    if (!credential) {
+      setErrorAuth("No se pudo validar el login de Google.");
+      return;
+    }
+
+    const payload = decodeJwtPayload(credential);
+    if (!payload) {
+      setErrorAuth("No se pudo leer la credencial de Google.");
+      return;
+    }
+
+    const user = mapGoogleUser(payload);
+    if (!user) {
+      setErrorAuth("No se pudo obtener la informacion del usuario.");
+      return;
+    }
+
+    setErrorAuth("");
+    setAuthUser(user);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(user));
+    }
+  };
+
+  const onGoogleError = () => {
+    setErrorAuth("Fallo el inicio de sesion con Google.");
+  };
+
+  const cerrarSesion = () => {
+    googleLogout();
+    setAuthUser(null);
+    setResultado(null);
+    setChat(INITIAL_CHAT);
+    setError("");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(GOOGLE_USER_KEY);
+    }
+  };
+
+  const topBar = (
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="text-sm text-gray-200">
+        {authUser ? (
+          <>
+            <p className="font-semibold text-green-300">Sesion activa: {authUser.name}</p>
+            <p className="text-xs text-gray-400">{authUser.email}</p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-amber-300">Debes iniciar sesion para hablar con el coach</p>
+            <p className="text-xs text-gray-400">El chat solo esta habilitado para usuarios autenticados.</p>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-col items-start sm:items-end gap-2">
+        {authUser ? (
+          <button
+            onClick={cerrarSesion}
+            className="px-3 py-2 rounded-md text-sm font-semibold bg-red-500 text-black hover:brightness-110"
+          >
+            Cerrar sesion
+          </button>
+        ) : !googleClientEnabled ? (
+          <p className="text-xs text-amber-300">
+            Configura NEXT_PUBLIC_GOOGLE_CLIENT_ID para habilitar login con Google.
+          </p>
+        ) : (
+          <GoogleLogin onSuccess={onGoogleSuccess} onError={onGoogleError} />
+        )}
+        {errorAuth && <p className="text-xs text-red-300">{errorAuth}</p>}
+      </div>
+    </div>
+  );
+
   return (
     <FitCoachView
+      topBar={topBar}
+      chatHabilitado={chatHabilitado}
       mensaje={mensaje}
       chat={chat}
       resultado={resultado}

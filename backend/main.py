@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from agent import generar_rutina_inteligente, generar_plan_conversacional, generar_detalle_dia
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
 import json
+from progreso_store import get_contexto_chat, save_contexto_chat
 
 app = FastAPI()
 
@@ -78,11 +79,22 @@ def agente(data: DatosUsuario):
 @app.post("/agente/chat")
 def agente_chat(data: DatosConversacion):
     perfil = data.perfil.model_dump() if data.perfil else {}
+    user_id = (data.user_id or "").strip()
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Debes iniciar sesion con Google para usar el chat.")
 
     resultado = generar_plan_conversacional(
         perfil=perfil,
         historial_chat=[m.model_dump() for m in data.historial_chat[-12:]],
     )
+
+    if user_id:
+        save_contexto_chat(
+            user_id=user_id,
+            historial_chat=[m.model_dump() for m in data.historial_chat[-20:]],
+            resultado=resultado,
+        )
 
     return {"resultado": resultado}
 
@@ -93,6 +105,12 @@ def agente_chat_stream(data: DatosConversacion):
         yield "event: start\ndata: {}\n\n"
 
         perfil = data.perfil.model_dump() if data.perfil else {}
+        user_id = (data.user_id or "").strip()
+
+        if not user_id:
+            payload = json.dumps({"message": "Debes iniciar sesion con Google para usar el chat."}, ensure_ascii=False)
+            yield f"event: error\ndata: {payload}\n\n"
+            return
 
         resultado = generar_plan_conversacional(
             perfil=perfil,
@@ -103,6 +121,13 @@ def agente_chat_stream(data: DatosConversacion):
             payload = json.dumps({"message": resultado.get("error")}, ensure_ascii=False)
             yield f"event: error\ndata: {payload}\n\n"
             return
+
+        if user_id:
+            save_contexto_chat(
+                user_id=user_id,
+                historial_chat=[m.model_dump() for m in data.historial_chat[-20:]],
+                resultado=resultado,
+            )
 
         mensaje = resultado.get("mensaje_coach", "")
         for token in mensaje.split(" "):
@@ -137,3 +162,8 @@ def agente_chat_detalle_dia(data: DatosDetalleDia):
     )
 
     return {"resultado": resultado}
+
+
+@app.get("/progreso/contexto/{user_id}")
+def progreso_contexto(user_id: str):
+    return {"resultado": get_contexto_chat(user_id)}

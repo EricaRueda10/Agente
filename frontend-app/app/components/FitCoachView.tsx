@@ -1,4 +1,4 @@
-import { FormEvent, RefObject } from "react";
+import { FormEvent, ReactNode, RefObject } from "react";
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -58,6 +58,8 @@ export type ResultadoCoach = {
 const INTENSIDADES: Intensidad[] = ["baja", "media", "alta"];
 
 type FitCoachViewProps = {
+  topBar?: ReactNode;
+  chatHabilitado?: boolean;
   mensaje: string;
   chat: ChatMessage[];
   resultado: ResultadoCoach | null;
@@ -77,6 +79,8 @@ type FitCoachViewProps = {
 };
 
 export default function FitCoachView({
+  topBar,
+  chatHabilitado = true,
   mensaje,
   chat,
   resultado,
@@ -98,6 +102,8 @@ export default function FitCoachView({
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-3 sm:p-4 md:p-6 text-white">
       <div className="mx-auto w-full max-w-7xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-4 md:p-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-5 text-center">🏋️ FitAI Coach</h1>
+
+        {topBar && <div className="mb-4">{topBar}</div>}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg border border-red-600 bg-red-900/40 text-red-200 text-sm">
@@ -133,18 +139,25 @@ export default function FitCoachView({
             <form onSubmit={onEnviarMensaje} className="mt-4 flex flex-col sm:flex-row gap-2">
               <textarea
                 className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-24 sm:min-h-14 max-h-36"
-                placeholder="Escribe aqui tu mensaje..."
+                placeholder={chatHabilitado ? "Escribe aqui tu mensaje..." : "Inicia sesion con Google para hablar con el coach."}
                 value={mensaje}
+                disabled={!chatHabilitado || loading}
                 onChange={(e) => onMensajeChange(e.target.value)}
               />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !chatHabilitado}
                 className="w-full sm:w-auto self-stretch sm:self-end bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold px-4 py-3 rounded-lg hover:scale-[1.02] transition disabled:opacity-60"
               >
                 Enviar
               </button>
             </form>
+
+            {!chatHabilitado && (
+              <div className="mt-3 p-3 rounded-lg border border-amber-700 bg-amber-900/30 text-amber-200 text-sm">
+                Debes iniciar sesion con Google para conversar con el agente.
+              </div>
+            )}
 
             {resultado?.estado === "faltan_datos" && (
               <div className="mt-3 p-3 rounded-lg border border-yellow-600 bg-yellow-900/20 text-yellow-100 text-sm">
