@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from agent import generar_rutina_inteligente, generar_plan_conversacional
+from agent import generar_rutina_inteligente, generar_plan_conversacional, generar_detalle_dia
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
@@ -36,8 +36,25 @@ class MensajeChat(BaseModel):
 
 
 class DatosConversacion(BaseModel):
+    user_id: Optional[str] = None
     perfil: Optional[PerfilUsuario] = None
     historial_chat: List[MensajeChat] = []
+
+
+class PreferenciasDetectadas(BaseModel):
+    equipamiento: List[str] = []
+    formatos: List[str] = []
+    restricciones: List[str] = []
+    texto_libre: str = ""
+
+
+class DatosDetalleDia(BaseModel):
+    perfil: PerfilUsuario
+    preferencias: PreferenciasDetectadas
+    intensidad: str
+    dia: str
+    grupo_muscular: str
+    foco: str
 
 historial_usuario = []
 
@@ -76,12 +93,13 @@ def agente_chat_stream(data: DatosConversacion):
         yield "event: start\ndata: {}\n\n"
 
         perfil = data.perfil.model_dump() if data.perfil else {}
+
         resultado = generar_plan_conversacional(
             perfil=perfil,
             historial_chat=[m.model_dump() for m in data.historial_chat[-12:]],
         )
 
-        if resultado.get("error"):
+        if resultado.get("error") and resultado.get("estado") != "rutina_lista":
             payload = json.dumps({"message": resultado.get("error")}, ensure_ascii=False)
             yield f"event: error\ndata: {payload}\n\n"
             return
@@ -105,3 +123,17 @@ def agente_chat_stream(data: DatosConversacion):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.post("/agente/chat/detalle-dia")
+def agente_chat_detalle_dia(data: DatosDetalleDia):
+    resultado = generar_detalle_dia(
+        perfil=data.perfil.model_dump(),
+        preferencias=data.preferencias.model_dump(),
+        intensidad=data.intensidad,
+        dia=data.dia,
+        grupo_muscular=data.grupo_muscular,
+        foco=data.foco,
+    )
+
+    return {"resultado": resultado}

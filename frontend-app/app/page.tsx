@@ -1,54 +1,12 @@
 "use client";
+
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
-
-type Intensidad = "baja" | "media" | "alta";
-
-type PerfilDetectado = {
-  edad: number | null;
-  estatura: number | null;
-  peso: number | null;
-  objetivo: string;
-  dias_disponibles: number | null;
-};
-
-type Ejercicio = {
-  grupo_muscular: string;
-  ejercicio: string;
-  series_reps: string;
-  descanso: string;
-  instrucciones: string;
-  tips: string;
-  video_busqueda: string;
-  imagen_referencia: string;
-};
-
-type DiaPlan = {
-  dia: string;
-  grupo_muscular: string;
-  foco: string;
-  ejercicios: Ejercicio[];
-};
-
-type PlanIntensidad = {
-  justificacion: string;
-  dias: DiaPlan[];
-};
-
-type ResultadoCoach = {
-  mensaje_coach: string;
-  estado: "faltan_datos" | "rutina_lista";
-  campos_faltantes: string[];
-  perfil_detectado: PerfilDetectado;
-  planes_por_intensidad: Record<Intensidad, PlanIntensidad>;
-  error?: string;
-};
-
-const INTENSIDADES: Intensidad[] = ["baja", "media", "alta"];
+import FitCoachView, {
+  ChatMessage,
+  DiaPlan,
+  Intensidad,
+  ResultadoCoach,
+} from "./components/FitCoachView";
 
 export default function Home() {
   const [mensaje, setMensaje] = useState("");
@@ -64,7 +22,32 @@ export default function Home() {
   const [diaActivo, setDiaActivo] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
+  const detallesEnCursoRef = useRef<Set<string>>(new Set());
+  const detallesCargadosRef = useRef<Set<string>>(new Set());
+
+  const intentarParsearResultado = (valor: unknown): ResultadoCoach | null => {
+    if (typeof valor !== "string") {
+      return null;
+    }
+
+    const texto = valor.trim();
+    if (!texto.startsWith("{")) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(texto);
+      if (parsed && typeof parsed === "object" && "mensaje_coach" in parsed && "planes_por_intensidad" in parsed) {
+        return parsed as ResultadoCoach;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     if (chatRef.current) {
@@ -84,6 +67,119 @@ export default function Home() {
     const primerDia = planActivo?.dias?.[0]?.dia || "";
     setDiaActivo(primerDia);
   }, [planActivo]);
+
+  const claveDetalle = (diaPlan: DiaPlan, intensidad: Intensidad) => {
+    return `${intensidad}|${diaPlan.dia}|${diaPlan.grupo_muscular}|${diaPlan.foco}`;
+  };
+
+  const cargarDetalleDia = async (
+    diaPlan: DiaPlan,
+    intensidad: Intensidad,
+    resultadoFuente?: ResultadoCoach,
+  ) => {
+    const baseResultado = resultadoFuente || resultado;
+    if (!baseResultado || baseResultado.estado !== "rutina_lista") {
+      return;
+    }
+
+    const key = claveDetalle(diaPlan, intensidad);
+    if (detallesCargadosRef.current.has(key) || detallesEnCursoRef.current.has(key)) {
+      return;
+    }
+
+    if (diaPlan.ejercicios?.length) {
+      detallesCargadosRef.current.add(key);
+      return;
+    }
+
+    detallesEnCursoRef.current.add(key);
+    setLoadingDetalle(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/agente/chat/detalle-dia", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          perfil: baseResultado.perfil_detectado,
+          preferencias: baseResultado.preferencias_detectadas || {
+            equipamiento: [],
+            formatos: [],
+            restricciones: [],
+            texto_libre: "",
+          },
+          intensidad,
+          dia: diaPlan.dia,
+          grupo_muscular: diaPlan.grupo_muscular,
+          foco: diaPlan.foco,
+        }),
+      });
+
+      if (!res.ok) {
+        return;
+      }
+
+      const data = await res.json();
+      const ejercicios = data?.resultado?.ejercicios;
+      if (!Array.isArray(ejercicios)) {
+        return;
+      }
+
+      detallesCargadosRef.current.add(key);
+
+      setResultado((prev) => {
+        if (!prev || prev.estado !== "rutina_lista") {
+          return prev;
+        }
+
+        const plan = prev.planes_por_intensidad?.[intensidad];
+        if (!plan) {
+          return prev;
+        }
+
+        const diasActualizados = plan.dias.map((d) => {
+          if (d.dia !== diaPlan.dia) {
+            return d;
+          }
+          return {
+            ...d,
+            ejercicios,
+          };
+        });
+
+        return {
+          ...prev,
+          planes_por_intensidad: {
+            ...prev.planes_por_intensidad,
+            [intensidad]: {
+              ...plan,
+              dias: diasActualizados,
+            },
+          },
+        };
+      });
+    } finally {
+      detallesEnCursoRef.current.delete(key);
+      if (detallesEnCursoRef.current.size === 0) {
+        setLoadingDetalle(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!resultado || resultado.estado !== "rutina_lista") {
+      return;
+    }
+    const plan = resultado.planes_por_intensidad?.[intensidadActiva];
+    if (!plan?.dias?.length) {
+      return;
+    }
+
+    const dia = plan.dias.find((d) => d.dia === diaActivo) || plan.dias[0];
+    if (dia && (!dia.ejercicios || dia.ejercicios.length === 0)) {
+      void cargarDetalleDia(dia, intensidadActiva, resultado);
+    }
+  }, [resultado, intensidadActiva, diaActivo]);
 
   const enviarMensaje = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -182,7 +278,19 @@ export default function Home() {
 
             if (eventType === "result") {
               const resultadoCoach: ResultadoCoach = parsed.resultado;
+              detallesEnCursoRef.current.clear();
+              detallesCargadosRef.current.clear();
               setResultado(resultadoCoach);
+
+              const primerDia =
+                resultadoCoach.planes_por_intensidad?.[intensidadActiva]?.dias?.[0];
+              if (
+                resultadoCoach.estado === "rutina_lista" &&
+                primerDia &&
+                (!primerDia.ejercicios || primerDia.ejercicios.length === 0)
+              ) {
+                void cargarDetalleDia(primerDia, intensidadActiva, resultadoCoach);
+              }
 
               setChat((prev) => {
                 const next = [...prev];
@@ -198,7 +306,24 @@ export default function Home() {
             }
 
             if (eventType === "error") {
-              setError(parsed.message || "No se pudo procesar el mensaje.");
+              const resultadoPosible = intentarParsearResultado(parsed.message);
+              if (resultadoPosible) {
+                detallesEnCursoRef.current.clear();
+                detallesCargadosRef.current.clear();
+                setError("");
+                setResultado(resultadoPosible);
+
+                const primerDia = resultadoPosible.planes_por_intensidad?.[intensidadActiva]?.dias?.[0];
+                if (
+                  resultadoPosible.estado === "rutina_lista" &&
+                  primerDia &&
+                  (!primerDia.ejercicios || primerDia.ejercicios.length === 0)
+                ) {
+                  void cargarDetalleDia(primerDia, intensidadActiva, resultadoPosible);
+                }
+              } else {
+                setError(parsed.message || "No se pudo procesar el mensaje.");
+              }
             }
           }
 
@@ -215,187 +340,23 @@ export default function Home() {
   const tieneRutina = resultado?.estado === "rutina_lista";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 md:p-6 text-white">
-      <div className="mx-auto w-full max-w-7xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-2xl shadow-2xl p-4 md:p-6">
-        <h1 className="text-3xl font-bold mb-5 text-center">🏋️ FitAI Coach</h1>
-
-        {error && (
-          <div className="mb-4 p-3 rounded-lg border border-red-600 bg-red-900/40 text-red-200 text-sm">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section className="border border-gray-700 bg-gray-900/70 rounded-xl p-4 flex flex-col min-h-[700px]">
-            <h2 className="text-xl font-semibold mb-3">Chat en tiempo real</h2>
-
-            <div ref={chatRef} className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {chat.map((m, idx) => (
-                <div
-                  key={idx}
-                  className={`max-w-[90%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "ml-auto bg-green-700/40 border border-green-600"
-                      : "mr-auto bg-blue-700/30 border border-blue-600"
-                  }`}
-                >
-                  {m.content}
-                </div>
-              ))}
-
-              {loading && (
-                <div className="max-w-[90%] mr-auto rounded-lg px-3 py-2 text-sm bg-blue-700/30 border border-blue-600 animate-pulse">
-                  El coach esta pensando...
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={enviarMensaje} className="mt-4 flex gap-2">
-              <textarea
-                className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 min-h-14 max-h-36"
-                placeholder="Escribe aqui tu mensaje..."
-                value={mensaje}
-                onChange={(e) => setMensaje(e.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="self-end bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold px-4 py-3 rounded-lg hover:scale-[1.02] transition disabled:opacity-60"
-              >
-                Enviar
-              </button>
-            </form>
-
-            {resultado?.estado === "faltan_datos" && (
-              <div className="mt-3 p-3 rounded-lg border border-yellow-600 bg-yellow-900/20 text-yellow-100 text-sm">
-                Campos pendientes: {resultado.campos_faltantes.join(", ")}
-              </div>
-            )}
-          </section>
-
-          <section className="border border-gray-700 bg-gray-900/70 rounded-xl p-4 min-h-[700px] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-3">Rutina recomendada</h2>
-
-            {!resultado && (
-              <p className="text-gray-300 text-sm">
-                Conversa con el coach. El te pedira edad, estatura, peso, objetivo y dias de entrenamiento.
-              </p>
-            )}
-
-            {resultado && (
-              <div className="space-y-4">
-                <div className="p-3 bg-gray-800 rounded-lg border border-gray-600 text-sm">
-                  <p>
-                    <span className="text-gray-400">Perfil detectado:</span>{" "}
-                    edad {resultado.perfil_detectado.edad ?? "-"}, estatura {resultado.perfil_detectado.estatura ?? "-"} cm,
-                    peso {resultado.perfil_detectado.peso ?? "-"} kg, objetivo {resultado.perfil_detectado.objetivo || "-"},
-                    dias {resultado.perfil_detectado.dias_disponibles ?? "-"}
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  {INTENSIDADES.map((intensidad) => {
-                    const activa = intensidadActiva === intensidad;
-                    return (
-                      <button
-                        key={intensidad}
-                        onClick={() => setIntensidadActiva(intensidad)}
-                        className={`px-3 py-2 rounded-lg text-sm font-semibold border ${
-                          activa
-                            ? "bg-green-500 text-black border-green-400"
-                            : "bg-gray-800 border-gray-600 text-gray-200"
-                        }`}
-                      >
-                        {intensidad.toUpperCase()}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {!tieneRutina && (
-                  <p className="text-sm text-gray-300">
-                    Aun no hay rutina. Responde las preguntas del coach para que pueda construir tu plan.
-                  </p>
-                )}
-
-                {tieneRutina && (
-                  <>
-                    <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600">
-                      <p className="text-xs text-gray-400 mb-2">Selecciona dia</p>
-                      <div className="flex flex-wrap gap-2">
-                        {planActivo?.dias?.map((dia) => (
-                          <button
-                            key={dia.dia}
-                            onClick={() => setDiaActivo(dia.dia)}
-                            className={`px-3 py-1.5 rounded-md text-sm border ${
-                              diaActivo === dia.dia
-                                ? "bg-blue-500 text-black border-blue-400"
-                                : "bg-gray-900 border-gray-700 text-gray-200"
-                            }`}
-                          >
-                            {dia.dia}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {diaSeleccionado ? (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-gray-800 rounded-lg border border-gray-600">
-                          <p className="font-semibold text-green-300">{diaSeleccionado.dia}</p>
-                          <p className="text-sm text-gray-200">{diaSeleccionado.grupo_muscular}</p>
-                          <p className="text-xs text-gray-400">{diaSeleccionado.foco}</p>
-                        </div>
-
-                        {diaSeleccionado.ejercicios.map((item, index) => (
-                          <div key={index} className="p-3 bg-gray-800 border border-gray-600 rounded-lg">
-                            <h3 className="font-bold text-base">💪 {item.ejercicio}</h3>
-                            <p className="text-xs text-blue-300 mt-1">Grupo: {item.grupo_muscular}</p>
-                            <p className="text-sm text-gray-300 mt-1">Series/Reps: {item.series_reps}</p>
-                            <p className="text-sm text-gray-300">Descanso: {item.descanso}</p>
-                            <p className="text-sm text-gray-300 mt-2">Como hacerlo: {item.instrucciones}</p>
-                            {item.tips && <p className="text-sm text-yellow-200 mt-1">Tip: {item.tips}</p>}
-
-                            {(item.video_busqueda || item.ejercicio) && (
-                              <a
-                                className="inline-block mt-2 text-sm text-cyan-300 underline"
-                                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
-                                  item.video_busqueda || item.ejercicio,
-                                )}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Ver tecnica en YouTube
-                              </a>
-                            )}
-
-                            {item.imagen_referencia && (
-                              <img
-                                src={item.imagen_referencia}
-                                alt={`Referencia de ${item.ejercicio}`}
-                                className="mt-3 rounded-lg border border-gray-700 w-full max-h-64 object-cover"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-300">
-                        No hay dias disponibles para esta intensidad todavia.
-                      </p>
-                    )}
-
-                    <div className="p-3 bg-blue-900/40 border border-blue-700 rounded-lg">
-                      <strong className="text-blue-300">Justificacion {intensidadActiva}:</strong>
-                      <p className="mt-1 text-gray-300 text-sm">{planActivo?.justificacion || "-"}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
-    </div>
+    <FitCoachView
+      mensaje={mensaje}
+      chat={chat}
+      resultado={resultado}
+      intensidadActiva={intensidadActiva}
+      diaActivo={diaActivo}
+      error={error}
+      loading={loading}
+      loadingDetalle={loadingDetalle}
+      tieneRutina={tieneRutina}
+      planActivo={planActivo}
+      diaSeleccionado={diaSeleccionado}
+      chatRef={chatRef}
+      onEnviarMensaje={enviarMensaje}
+      onMensajeChange={setMensaje}
+      onIntensidadChange={setIntensidadActiva}
+      onDiaChange={setDiaActivo}
+    />
   );
 }

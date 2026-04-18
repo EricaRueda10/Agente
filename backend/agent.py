@@ -3,10 +3,16 @@ import os
 from dotenv import load_dotenv
 import json
 import unicodedata
+import re
+import time
+import copy
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=20.0, max_retries=0)
+PLAN_CACHE_TTL = 900
+_PLAN_CACHE = {}
+_DAY_DETAIL_CACHE = {}
 
 CAMPO_OBLIGATORIOS = [
     "edad",
@@ -18,16 +24,62 @@ CAMPO_OBLIGATORIOS = [
 
 
 def _limpiar_y_parsear_json(contenido):
-    if "```" in contenido:
-        partes = contenido.split("```")
-        if len(partes) >= 2:
-            contenido = partes[1]
-        contenido = contenido.replace("json", "").strip()
+    texto = contenido.strip()
 
-    try:
-        return json.loads(contenido)
-    except Exception:
-        return {"error": contenido}
+    if "```" in texto:
+        partes = texto.split("```")
+        if len(partes) >= 2:
+            texto = partes[1]
+        texto = texto.replace("json", "").strip()
+
+    candidatos = [texto]
+    inicio_objeto = texto.find("{")
+    final_objeto = texto.rfind("}")
+    if inicio_objeto != -1 and final_objeto != -1 and final_objeto > inicio_objeto:
+        candidatos.append(texto[inicio_objeto : final_objeto + 1])
+
+    inicio_array = texto.find("[")
+    final_array = texto.rfind("]")
+    if inicio_array != -1 and final_array != -1 and final_array > inicio_array:
+        candidatos.append(texto[inicio_array : final_array + 1])
+
+    for candidato in candidatos:
+        try:
+            return json.loads(candidato)
+        except Exception:
+            continue
+
+    return {"error": texto}
+
+
+def _rescatar_json_desde_error(valor_error):
+    if not isinstance(valor_error, str):
+        return None
+
+    texto = valor_error.strip()
+    if not texto:
+        return None
+
+    for simbolo_inicio, simbolo_fin in (("{", "}"), ("[", "]")):
+        inicio = texto.find(simbolo_inicio)
+        final = texto.rfind(simbolo_fin)
+        if inicio == -1 or final == -1 or final <= inicio:
+            continue
+
+        fragmento = texto[inicio : final + 1]
+        try:
+            decodificador = json.JSONDecoder()
+            recuperado, _ = decodificador.raw_decode(fragmento)
+            if isinstance(recuperado, dict) and "error" not in recuperado:
+                return recuperado
+            if isinstance(recuperado, list):
+                return {"planes_por_intensidad": recuperado}
+        except Exception:
+            recuperado = _limpiar_y_parsear_json(fragmento)
+            if isinstance(recuperado, dict) and "error" not in recuperado:
+                return recuperado
+
+    return None
 
 
 def _perfil_completo(perfil):
@@ -97,6 +149,10 @@ def _extraer_preferencias_chat(historial_chat):
         formatos.append("hipertrofia")
     if "fuerza" in texto:
         formatos.append("fuerza")
+    if "quema grasa" in texto or "quemar grasa" in texto:
+        formatos.append("quema_grasa")
+    if "funcional" in texto:
+        formatos.append("funcional")
 
     if "sin salto" in texto or "sin saltos" in texto:
         restricciones.append("sin_saltos")
@@ -115,9 +171,317 @@ def _extraer_preferencias_chat(historial_chat):
     }
 
 
+def _texto_usuario_completo(historial_chat):
+    return " ".join(
+        m.get("content", "") for m in historial_chat if m.get("role") == "user"
+    )
+
+
+def _buscar_patron(texto, patrones):
+    for patron in patrones:
+        match = re.search(patron, texto, flags=re.IGNORECASE)
+        if match:
+            return match
+    return None
+
+
+def _extraer_perfil_chat(historial_chat):
+    texto_original = _texto_usuario_completo(historial_chat)
+    texto = _normalizar_texto(texto_original)
+
+    edad = None
+    estatura = None
+    peso = None
+    objetivo = ""
+    dias_disponibles = None
+
+    match_edad = _buscar_patron(
+        texto,
+        [
+            r"(?:tengo|edad)\s*(\d{1,2})\s*anos",
+            r"(\d{1,2})\s*anos",
+        ],
+    )
+    if match_edad:
+        edad = int(match_edad.group(1))
+
+    match_estatura_cm = _buscar_patron(
+        texto,
+        [
+            r"(?:mido|estatura)\s*(\d{3})\s*cm",
+            r"(?:mido|estatura)\s*(\d{3})\b",
+        ],
+    )
+    match_estatura_m = _buscar_patron(
+        texto,
+        [
+            r"(?:mido|estatura)\s*(1\.\d{1,2})\s*m",
+            r"(?:mido|estatura)\s*(1,\d{1,2})\s*m",
+        ],
+    )
+    if match_estatura_cm:
+        estatura = int(match_estatura_cm.group(1))
+    elif match_estatura_m:
+        valor = match_estatura_m.group(1).replace(",", ".")
+        estatura = int(float(valor) * 100)
+
+    match_peso = _buscar_patron(
+        texto,
+        [
+            r"(?:peso|peso actual)\s*(\d{2,3})\s*kg",
+            r"(?:peso|peso actual)\s*(\d{2,3})\b",
+        ],
+    )
+    if match_peso:
+        peso = int(match_peso.group(1))
+
+    match_dias = _buscar_patron(
+        texto,
+        [
+            r"(?:puedo entrenar|entreno|entrenar)\s*(\d)\s*dias",
+            r"(\d)\s*dias\s*(?:por semana|a la semana)?",
+        ],
+    )
+    if match_dias:
+        dias_disponibles = int(match_dias.group(1))
+
+    objetivos = [
+        "perder grasa",
+        "bajar grasa",
+        "bajar de peso",
+        "ganar masa muscular",
+        "hipertrofia",
+        "tonificar",
+        "fuerza",
+        "resistencia",
+        "recomposicion corporal",
+        "mantenerme",
+    ]
+    for obj in objetivos:
+        if obj in texto:
+            objetivo = obj
+            break
+
+    return {
+        "edad": edad,
+        "estatura": estatura,
+        "peso": peso,
+        "objetivo": objetivo,
+        "dias_disponibles": dias_disponibles,
+    }
+
+
+def _fusionar_perfiles(perfil_entrada, perfil_extraido):
+    return {
+        "edad": perfil_entrada.get("edad") or perfil_extraido.get("edad"),
+        "estatura": perfil_entrada.get("estatura") or perfil_extraido.get("estatura"),
+        "peso": perfil_entrada.get("peso") or perfil_extraido.get("peso"),
+        "objetivo": perfil_entrada.get("objetivo") or perfil_extraido.get("objetivo"),
+        "dias_disponibles": perfil_entrada.get("dias_disponibles") or perfil_extraido.get("dias_disponibles"),
+    }
+
+
+def _cache_key_plan(perfil, preferencias):
+    objetivo = _normalizar_texto((perfil.get("objetivo") or "").strip())
+    return json.dumps(
+        {
+            "perfil": {
+                "edad": perfil.get("edad"),
+                "estatura": perfil.get("estatura"),
+                "peso": perfil.get("peso"),
+                "objetivo": objetivo,
+                "dias_disponibles": perfil.get("dias_disponibles"),
+            },
+            "preferencias": {
+                "equipamiento": sorted(preferencias.get("equipamiento", [])),
+                "formatos": sorted(preferencias.get("formatos", [])),
+                "restricciones": sorted(preferencias.get("restricciones", [])),
+            },
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+
+def _mensaje_faltantes(faltantes):
+    etiquetas = {
+        "edad": "tu edad",
+        "estatura": "tu estatura en cm",
+        "peso": "tu peso en kg",
+        "objetivo": "tu objetivo principal",
+        "dias_disponibles": "cuantos dias puedes entrenar por semana",
+    }
+    campos = [etiquetas.get(campo, campo) for campo in faltantes]
+    return "Para armarte un plan de coach real, necesito: " + ", ".join(campos) + "."
+
+
+def _planes_vacios():
+    return {
+        "baja": {"justificacion": "", "dias": []},
+        "media": {"justificacion": "", "dias": []},
+        "alta": {"justificacion": "", "dias": []},
+    }
+
+
+def _dia_base_respaldo(perfil, intensidad, indice):
+    objetivo = _normalizar_texto((perfil.get("objetivo") or "").strip())
+    if any(clave in objetivo for clave in ("masa", "muscular", "hipertrof")):
+        grupos = [
+            ("Pecho y triceps", "Empuje tecnico y controlado"),
+            ("Espalda y biceps", "Tiron con rango completo"),
+            ("Piernas", "Base de fuerza y volumen"),
+            ("Hombros y abdomen", "Estabilidad y postura"),
+        ]
+    elif any(clave in objetivo for clave in ("grasa", "definir", "perder", "bajar peso")):
+        grupos = [
+            ("Cuerpo completo", "Bloque metabolico y constante"),
+            ("Piernas y gluteos", "Control y gasto energetico"),
+            ("Espalda y core", "Tension sostenida y tecnica"),
+            ("Torso y brazos", "Trabajo continuo sin impacto"),
+        ]
+    else:
+        grupos = [
+            ("Cuerpo completo", "Acondicionamiento general"),
+            ("Tren superior", "Control de tecnica y volumen"),
+            ("Tren inferior", "Fuerza y estabilidad"),
+            ("Core y movilidad", "Calidad de movimiento"),
+        ]
+
+    grupo_muscular, foco_base = grupos[(indice - 1) % len(grupos)]
+    foco_por_intensidad = {
+        "baja": foco_base,
+        "media": f"{foco_base} progresivo",
+        "alta": f"{foco_base} exigente",
+    }
+
+    return {
+        "dia": f"Dia {indice}",
+        "grupo_muscular": grupo_muscular,
+        "foco": foco_por_intensidad.get(intensidad, foco_base),
+        "ejercicios": [],
+    }
+
+
+def _construir_planes_respaldo(perfil, preferencias):
+    dias_disponibles = perfil.get("dias_disponibles") or 3
+    try:
+        dias_disponibles = int(dias_disponibles)
+    except Exception:
+        dias_disponibles = 3
+    dias_disponibles = max(2, min(dias_disponibles, 6))
+
+    equipamiento = preferencias.get("equipamiento", []) or []
+    restricciones = preferencias.get("restricciones", []) or []
+
+    mensaje = "Tu rutina base quedo lista. Selecciona un dia para ver el detalle completo."
+    if equipamiento:
+        mensaje = f"Tu rutina base ya respeta {', '.join(equipamiento[:2])}. Selecciona un dia para ver el detalle completo."
+    if restricciones:
+        mensaje = f"Tu rutina base ya respeta {', '.join(restricciones[:2])}. Selecciona un dia para ver el detalle completo."
+
+    return {
+        "mensaje_coach": mensaje,
+        "planes_por_intensidad": {
+            "baja": {
+                "justificacion": "Base segura para arrancar con tecnica y adherencia.",
+                "dias": [_dia_base_respaldo(perfil, "baja", indice) for indice in range(1, dias_disponibles + 1)],
+            },
+            "media": {
+                "justificacion": "Volumen equilibrado para progresar sin sobrecarga.",
+                "dias": [_dia_base_respaldo(perfil, "media", indice) for indice in range(1, dias_disponibles + 1)],
+            },
+            "alta": {
+                "justificacion": "Mayor exigencia para empujar adaptacion y rendimiento.",
+                "dias": [_dia_base_respaldo(perfil, "alta", indice) for indice in range(1, dias_disponibles + 1)],
+            },
+        },
+    }
+
+
+def _planes_tienen_dias(planes):
+    if not isinstance(planes, dict):
+        return False
+    for intensidad in ("baja", "media", "alta"):
+        plan = planes.get(intensidad) or {}
+        dias = plan.get("dias") if isinstance(plan, dict) else None
+        if isinstance(dias, list) and len(dias) > 0:
+            return True
+    return False
+
+
+def _normalizar_planes_rescatados(resultado):
+    if not isinstance(resultado, dict):
+        return None
+
+    if "planes_por_intensidad" not in resultado and all(k in resultado for k in ("baja", "media", "alta")):
+        resultado = {
+            "mensaje_coach": resultado.get("mensaje_coach", ""),
+            "planes_por_intensidad": {
+                "baja": resultado.get("baja", {"justificacion": "", "dias": []}),
+                "media": resultado.get("media", {"justificacion": "", "dias": []}),
+                "alta": resultado.get("alta", {"justificacion": "", "dias": []}),
+            },
+        }
+
+    if "planes_por_intensidad" not in resultado:
+        return None
+
+    planes = resultado.get("planes_por_intensidad") or {}
+    if not isinstance(planes, dict):
+        return None
+    for intensidad in ("baja", "media", "alta"):
+        plan = planes.get(intensidad) or {}
+        if not isinstance(plan, dict):
+            plan = {}
+        dias = plan.get("dias") or []
+        if not isinstance(dias, list):
+            dias = []
+        planes[intensidad] = {
+            "justificacion": plan.get("justificacion", ""),
+            "dias": dias,
+        }
+
+    return {
+        "mensaje_coach": resultado.get("mensaje_coach", "Perfecto, aqui tienes tu plan personalizado por intensidad."),
+        "planes_por_intensidad": planes,
+    }
+
+
+def _cache_key_day_detail(perfil, preferencias, intensidad, dia, grupo_muscular, foco):
+    objetivo = _normalizar_texto((perfil.get("objetivo") or "").strip())
+    return json.dumps(
+        {
+            "perfil": {
+                "edad": perfil.get("edad"),
+                "estatura": perfil.get("estatura"),
+                "peso": perfil.get("peso"),
+                "objetivo": objetivo,
+                "dias_disponibles": perfil.get("dias_disponibles"),
+            },
+            "preferencias": {
+                "equipamiento": sorted(preferencias.get("equipamiento", [])),
+                "formatos": sorted(preferencias.get("formatos", [])),
+                "restricciones": sorted(preferencias.get("restricciones", [])),
+            },
+            "intensidad": intensidad,
+            "dia": dia,
+            "grupo_muscular": grupo_muscular,
+            "foco": foco,
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+
 def _generar_planes_por_intensidad(perfil, preferencias):
+    cache_key = _cache_key_plan(perfil, preferencias)
+    ahora = time.time()
+    cache_item = _PLAN_CACHE.get(cache_key)
+    if cache_item and (ahora - cache_item["ts"] <= PLAN_CACHE_TTL):
+        return copy.deepcopy(cache_item["value"])
+
     contexto = f"""
-Eres un Fit Coach profesional.
+Eres un Fit Coach profesional de alto nivel.
 
 Perfil confirmado:
 - edad: {perfil.get("edad")}
@@ -132,6 +496,12 @@ Preferencias detectadas desde el chat del usuario:
 - restricciones: {preferencias.get("restricciones")}
 - texto_libre: {preferencias.get("texto_libre")}
 
+Tu enfoque tecnico:
+- Debes pensar como entrenador real: seguridad, progresion y adherencia.
+- Ajusta la seleccion de ejercicios a nivel del usuario y objetivo.
+- Da instrucciones concretas y ejecutables (tecnica, postura, tempo y control).
+- Usa tips utiles de coaching, no texto generico.
+
 Responde SOLO JSON valido con esta estructura exacta:
 {{
     "mensaje_coach": "",
@@ -142,43 +512,120 @@ Responde SOLO JSON valido con esta estructura exacta:
     }}
 }}
 
-Formato de cada dia:
+Formato de cada dia (respuesta RAPIDA, sin detalle completo de ejercicios):
 {{
     "dia": "Dia 1",
     "grupo_muscular": "Pecho y triceps",
     "foco": "Hipertrofia tecnica",
-    "ejercicios": [
-        {{
-            "grupo_muscular": "Pecho",
-            "ejercicio": "Press de banca",
-            "series_reps": "4x8",
-            "descanso": "90s",
-            "instrucciones": "",
-            "tips": "",
-            "video_busqueda": "Press de banca tecnica",
-            "imagen_referencia": ""
-        }}
-    ]
+    "ejercicios": []
 }}
 
 Reglas:
 1. En cada intensidad crea exactamente {perfil.get("dias_disponibles")} dias.
-2. Cada dia debe tener 4 a 6 ejercicios.
-3. Ajusta volumen y exigencia segun intensidad (baja, media, alta).
+2. Ajusta volumen y exigencia segun intensidad (baja, media, alta).
+3. Respuesta inicial RAPIDA: deja siempre ejercicios=[] en cada dia.
 4. Mantener recomendaciones seguras y progresivas.
 5. Si el usuario pide "solo mancuernas", TODOS los ejercicios deben ser con mancuernas.
 6. Si el usuario pide "solo maquinas", TODOS los ejercicios deben ser de maquinas.
 7. Si el usuario pide TABATA, la rutina debe usar estructura TABATA (bloques por intervalos) y ejercicios compatibles.
 8. Respeta restricciones detectadas (ej: sin saltos, bajo impacto, cuidar rodilla).
+9. justificacion por intensidad debe ser breve (maximo 140 caracteres).
+10. mensaje_coach debe incluir feedback motivador, una recomendacion de ejecucion y una pauta de progresion semanal (maximo 320 caracteres).
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": contexto}],
-        temperature=0.4,
-    )
+    try:
+        response = client.with_options(timeout=20.0, max_retries=0).chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": contexto}],
+            temperature=0.25,
+            max_tokens=850,
+            response_format={"type": "json_object"},
+        )
+    except Exception:
+        return {"error": "El coach esta tardando mas de lo esperado. Intenta nuevamente en unos segundos."}
+
     contenido = response.choices[0].message.content
-    return _limpiar_y_parsear_json(contenido)
+    resultado = _limpiar_y_parsear_json(contenido)
+    if "error" not in resultado:
+        _PLAN_CACHE[cache_key] = {"ts": ahora, "value": copy.deepcopy(resultado)}
+    return resultado
+
+
+def generar_detalle_dia(perfil, preferencias, intensidad, dia, grupo_muscular, foco):
+    cache_key = _cache_key_day_detail(
+        perfil=perfil,
+        preferencias=preferencias,
+        intensidad=intensidad,
+        dia=dia,
+        grupo_muscular=grupo_muscular,
+        foco=foco,
+    )
+    ahora = time.time()
+    cache_item = _DAY_DETAIL_CACHE.get(cache_key)
+    if cache_item and (ahora - cache_item["ts"] <= PLAN_CACHE_TTL):
+        return copy.deepcopy(cache_item["value"])
+
+    contexto = f"""
+Eres un Fit Coach profesional. Genera el detalle de un solo dia.
+
+Perfil:
+- edad: {perfil.get("edad")}
+- estatura: {perfil.get("estatura")} cm
+- peso: {perfil.get("peso")} kg
+- objetivo: {perfil.get("objetivo")}
+
+Preferencias:
+- equipamiento: {preferencias.get("equipamiento")}
+- formatos: {preferencias.get("formatos")}
+- restricciones: {preferencias.get("restricciones")}
+
+Dia a detallar:
+- intensidad: {intensidad}
+- dia: {dia}
+- grupo_muscular: {grupo_muscular}
+- foco: {foco}
+
+Responde SOLO JSON valido con esta estructura exacta:
+{{
+  "ejercicios": [
+    {{
+      "grupo_muscular": "",
+      "ejercicio": "",
+      "series_reps": "",
+      "descanso": "",
+      "instrucciones": "",
+      "tips": "",
+      "video_busqueda": "",
+      "imagen_referencia": ""
+    }}
+  ]
+}}
+
+Reglas:
+1. Devuelve exactamente 4 ejercicios.
+2. Respeta intensidad, foco y restricciones.
+3. Si pidio solo mancuernas o solo maquinas, cumplir en todos los ejercicios.
+4. Si pidio tabata, usar estructura de intervalos compatible.
+5. Instrucciones cortas y accionables (max 16 palabras).
+6. Tips breves de coaching (max 12 palabras).
+"""
+
+    try:
+        response = client.with_options(timeout=20.0, max_retries=0).chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": contexto}],
+            temperature=0.2,
+            max_tokens=900,
+            response_format={"type": "json_object"},
+        )
+    except Exception:
+        return {"error": "No pude cargar el detalle del dia a tiempo. Intenta nuevamente."}
+
+    contenido = response.choices[0].message.content
+    resultado = _limpiar_y_parsear_json(contenido)
+    if "error" not in resultado:
+        _DAY_DETAIL_CACHE[cache_key] = {"ts": ahora, "value": copy.deepcopy(resultado)}
+    return resultado
 
 
 def generar_rutina_inteligente(objetivo, pasos, sueno, historial):
@@ -208,10 +655,11 @@ Responde en formato JSON así:
 }}
 """
 
-    response = client.chat.completions.create(
+    response = client.with_options(timeout=20.0, max_retries=0).chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": contexto}],
         temperature=0.7,
+        response_format={"type": "json_object"},
     )
 
     contenido = response.choices[0].message.content
@@ -219,95 +667,9 @@ Responde en formato JSON así:
 
 
 def generar_plan_conversacional(perfil, historial_chat):
-    contexto = f"""
-Actua como Fit Coach profesional con enfoque en seguridad y progresion.
-
-Debes conducir una conversacion para obtener estos campos obligatorios:
-- edad
-- estatura (cm)
-- peso (kg)
-- objetivo
-- dias_disponibles (dias por semana para entrenar)
-
-Perfil parcial actual (puede venir incompleto):
-{perfil}
-
-Historial de conversacion completo:
-{historial_chat}
-
-Responde SOLO JSON valido con esta estructura exacta:
-{{
-    "mensaje_coach": "",
-    "estado": "faltan_datos|rutina_lista",
-    "campos_faltantes": ["edad", "estatura", "peso", "objetivo", "dias_disponibles"],
-    "perfil_detectado": {{
-        "edad": null,
-        "estatura": null,
-        "peso": null,
-        "objetivo": "",
-        "dias_disponibles": null
-    }},
-    "planes_por_intensidad": {{
-        "baja": {{"justificacion": "", "dias": []}},
-        "media": {{"justificacion": "", "dias": []}},
-        "alta": {{"justificacion": "", "dias": []}}
-    }},
-    "preferencias_detectadas": {{
-        "equipamiento": [],
-        "formatos": [],
-        "restricciones": []
-    }}
-}}
-
-Formato de cada item en planes_por_intensidad.<intensidad>.dias:
-{{
-    "dia": "Dia 1",
-    "grupo_muscular": "Pecho y triceps",
-    "foco": "Hipertrofia tecnica",
-    "ejercicios": [
-        {{
-            "grupo_muscular": "Pecho",
-            "ejercicio": "Press de banca",
-            "series_reps": "4x8",
-            "descanso": "90s",
-            "instrucciones": "",
-            "tips": "",
-            "video_busqueda": "Press de banca tecnica",
-            "imagen_referencia": ""
-        }}
-    ]
-}}
-
-Reglas:
-1. Si faltan datos, NO generes rutina: estado=faltan_datos, planes vacios y mensaje_coach pidiendo solo los campos faltantes en lenguaje natural.
-2. Si ya tienes todos los datos, estado=rutina_lista y genera 3 planes (baja/media/alta).
-3. Cada plan debe tener exactamente tantos dias como dias_disponibles.
-4. En cada dia incluye 4 a 6 ejercicios.
-5. Mantener recomendaciones seguras y progresivas.
-6. En video_busqueda dejar texto de busqueda para YouTube.
-"""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": contexto}],
-        temperature=0.6,
-    )
-
-    contenido = response.choices[0].message.content
-    resultado = _limpiar_y_parsear_json(contenido)
-
-    if "error" in resultado:
-        return resultado
-
-    perfil_detectado = _normalizar_perfil(resultado.get("perfil_detectado", {}))
     perfil_entrada = _normalizar_perfil(perfil or {})
-    perfil_final = {
-        "edad": perfil_entrada.get("edad") or perfil_detectado.get("edad"),
-        "estatura": perfil_entrada.get("estatura") or perfil_detectado.get("estatura"),
-        "peso": perfil_entrada.get("peso") or perfil_detectado.get("peso"),
-        "objetivo": perfil_entrada.get("objetivo") or perfil_detectado.get("objetivo"),
-        "dias_disponibles": perfil_entrada.get("dias_disponibles") or perfil_detectado.get("dias_disponibles"),
-    }
+    perfil_detectado_chat = _extraer_perfil_chat(historial_chat)
+    perfil_final = _fusionar_perfiles(perfil_entrada, perfil_detectado_chat)
 
     faltantes = _campos_faltantes(perfil_final)
     preferencias = _extraer_preferencias_chat(historial_chat)
@@ -315,7 +677,25 @@ Reglas:
     if not faltantes:
         planes = _generar_planes_por_intensidad(perfil_final, preferencias)
         if "error" in planes:
-            return planes
+            recuperado = _rescatar_json_desde_error(planes.get("error"))
+            normalizado = _normalizar_planes_rescatados(recuperado)
+            if normalizado:
+                planes = normalizado
+            else:
+                return {
+                    "estado": "rutina_lista",
+                    "campos_faltantes": faltantes,
+                    "perfil_detectado": perfil_final,
+                    "preferencias_detectadas": preferencias,
+                    **_construir_planes_respaldo(perfil_final, preferencias),
+                }
+
+        normalizado = _normalizar_planes_rescatados(planes)
+        if normalizado:
+            planes = normalizado
+
+        if not _planes_tienen_dias(planes.get("planes_por_intensidad", planes)):
+            planes = _construir_planes_respaldo(perfil_final, preferencias)
 
         return {
             "mensaje_coach": planes.get("mensaje_coach") or "Perfecto, aqui tienes tu plan personalizado por intensidad.",
@@ -323,22 +703,14 @@ Reglas:
             "campos_faltantes": [],
             "perfil_detectado": perfil_final,
             "preferencias_detectadas": preferencias,
-            "planes_por_intensidad": planes.get("planes_por_intensidad", {
-                "baja": {"justificacion": "", "dias": []},
-                "media": {"justificacion": "", "dias": []},
-                "alta": {"justificacion": "", "dias": []},
-            }),
+            "planes_por_intensidad": planes.get("planes_por_intensidad", _planes_vacios()),
         }
 
     return {
-        "mensaje_coach": resultado.get("mensaje_coach") or "Necesito algunos datos mas para preparar tu plan.",
+        "mensaje_coach": _mensaje_faltantes(faltantes),
         "estado": "faltan_datos",
         "campos_faltantes": faltantes,
         "perfil_detectado": perfil_final,
         "preferencias_detectadas": preferencias,
-        "planes_por_intensidad": {
-            "baja": {"justificacion": "", "dias": []},
-            "media": {"justificacion": "", "dias": []},
-            "alta": {"justificacion": "", "dias": []},
-        },
+        "planes_por_intensidad": _planes_vacios(),
     }

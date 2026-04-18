@@ -1,0 +1,696 @@
+{
+  "users": {
+    "fitai-test": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "Tengo 30 anos, mido 172 cm, peso 75 kg, objetivo perder grasa y puedo entrenar 3 dias por semana. Quiero mancuernas tabata y sin saltos"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "¡Estás en el camino correcto hacia tus objetivos! Concéntrate en la técnica y controla el movimiento. Aumenta el peso de las mancuernas cada semana si te sientes cómodo. Recuerda descansar adecuadamente entre sesiones para optimizar la recuperación.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 30,
+          "estatura": 172,
+          "peso": 75,
+          "objetivo": "perder grasa",
+          "dias_disponibles": 3
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [
+            "mancuernas"
+          ],
+          "formatos": [
+            "tabata"
+          ],
+          "restricciones": [
+            "sin_saltos"
+          ],
+          "texto_libre": "Tengo 30 anos, mido 172 cm, peso 75 kg, objetivo perder grasa y puedo entrenar 3 dias por semana. Quiero mancuernas tabata y sin saltos"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "Ideal para iniciar y adaptarse al entrenamiento sin riesgo de lesiones.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "media": {
+            "justificacion": "Aumenta la intensidad y el volumen para mejorar la quema de grasa.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia y resistencia",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia y resistencia",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Hipertrofia y resistencia",
+                "ejercicios": []
+              }
+            ]
+          },
+          "alta": {
+            "justificacion": "Desafía tu cuerpo con alta intensidad para maximizar la pérdida de grasa.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Resistencia y quema de grasa",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Resistencia y quema de grasa",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Resistencia y quema de grasa",
+                "ejercicios": []
+              }
+            ]
+          }
+        }
+      },
+      "perfil": {
+        "edad": 30,
+        "estatura": 172,
+        "peso": 75,
+        "objetivo": "perder grasa",
+        "dias_disponibles": 3
+      },
+      "preferencias": {
+        "equipamiento": [
+          "mancuernas"
+        ],
+        "formatos": [
+          "tabata"
+        ],
+        "restricciones": [
+          "sin_saltos"
+        ],
+        "texto_libre": "Tengo 30 anos, mido 172 cm, peso 75 kg, objetivo perder grasa y puedo entrenar 3 dias por semana. Quiero mancuernas tabata y sin saltos"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "fitai-0e2cf3c1-bcde-43b6-8a5a-7c6a1e823730": {
+      "chat": [
+        {
+          "role": "assistant",
+          "content": "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana."
+        },
+        {
+          "role": "user",
+          "content": "edad 19, mido 175 peso 75 objetico ganar masa muscular y entrenar 6 dias por semana"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu edad. "
+        },
+        {
+          "role": "user",
+          "content": "18"
+        },
+        {
+          "role": "user",
+          "content": "20 años"
+        },
+        {
+          "role": "user",
+          "content": "rutina solo con mancuernas"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "No pude construir la rutina en este intento. Intenta de nuevo.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 20,
+          "estatura": 175,
+          "peso": 75,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 6
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [
+            "mancuernas"
+          ],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "edad 19, mido 175 peso 75 objetico ganar masa muscular y entrenar 6 dias por semana 18 20 años rutina solo con mancuernas"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "",
+            "dias": []
+          },
+          "media": {
+            "justificacion": "",
+            "dias": []
+          },
+          "alta": {
+            "justificacion": "",
+            "dias": []
+          }
+        }
+      },
+      "perfil": {
+        "edad": 20,
+        "estatura": 175,
+        "peso": 75,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 6
+      },
+      "preferencias": {
+        "equipamiento": [
+          "mancuernas"
+        ],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "edad 19, mido 175 peso 75 objetico ganar masa muscular y entrenar 6 dias por semana 18 20 años rutina solo con mancuernas"
+      },
+      "sesiones": [
+        {
+          "fecha": "2026-04-17",
+          "intensidad": "baja",
+          "dia": "Dia 1",
+          "ejercicios_planeados": 4,
+          "ejercicios_completados": 1,
+          "cumplimiento_pct": 25.0,
+          "carga_total": 50.0,
+          "registros": [
+            {
+              "ejercicio": "Press de pecho con mancuernas",
+              "hecho": true,
+              "reps": 5,
+              "peso": 10.0
+            },
+            {
+              "ejercicio": "Aperturas con mancuernas",
+              "hecho": false,
+              "reps": 0,
+              "peso": 0.0
+            },
+            {
+              "ejercicio": "Extensión de tríceps sobre la cabeza",
+              "hecho": false,
+              "reps": 0,
+              "peso": 0.0
+            },
+            {
+              "ejercicio": "Fondos entre bancos",
+              "hecho": false,
+              "reps": 0,
+              "peso": 0.0
+            }
+          ]
+        }
+      ],
+      "metricas_corporales": [],
+      "racha_dias": 1,
+      "ultimo_entreno_fecha": "2026-04-17"
+    },
+    "fitai-test-2": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "Tengo 20 anos, mido 175, peso 70, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "No pude construir la rutina en este intento. Intenta de nuevo.",
+        "estado": "faltan_datos",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 20,
+          "estatura": 175,
+          "peso": 70,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 6
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "Tengo 20 anos, mido 175, peso 70, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "",
+            "dias": []
+          },
+          "media": {
+            "justificacion": "",
+            "dias": []
+          },
+          "alta": {
+            "justificacion": "",
+            "dias": []
+          }
+        },
+        "error": "{\n    \"mensaje_coach\": \"¡Estás en el camino correcto hacia tus objetivos! Concéntrate en la técnica y la forma. Aumenta el peso progresivamente cada semana, pero siempre prioriza la seguridad.\",\n    \"planes_por_intensidad\": {\n        \"baja\": {\n            \"justificacion\": \"Ideal para familiarizarse con los movimientos y mejorar la técnica.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 4\",\n                    \"grupo_muscular\": \"Hombros y abdomen\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 5\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 6\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                }\n            ]\n        },\n        \"media\": {\n            \"justificacion\": \"Aumenta la carga y el volumen para estimular el crecimiento muscular.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 4\",\n                    \"grupo_muscular\": \"Hombros y abdomen\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 5\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 6\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia progresiva\",\n                    \"ejercicios\": []\n                }\n            ]\n        },\n        \"alta\": {\n            \"justificacion\": \"Entrenamiento intenso para maximizar la ganancia muscular y la fuerza.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia máxima\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia máxima\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia máxima\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia"
+      },
+      "perfil": {
+        "edad": 20,
+        "estatura": 175,
+        "peso": 70,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 6
+      },
+      "preferencias": {
+        "equipamiento": [],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "Tengo 20 anos, mido 175, peso 70, objetivo ganar masa muscular y entrenar 6 dias por semana"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "fitai-test-4": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "No pude construir la rutina en este intento. Intenta de nuevo.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 20,
+          "estatura": 175,
+          "peso": 70,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 6
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "",
+            "dias": []
+          },
+          "media": {
+            "justificacion": "",
+            "dias": []
+          },
+          "alta": {
+            "justificacion": "",
+            "dias": []
+          }
+        },
+        "error": "{\n    \"mensaje_coach\": \"¡Estás en el camino correcto hacia tus objetivos! Mantén una buena técnica en cada ejercicio y asegúrate de aumentar progresivamente el peso cada semana. Recuerda descansar adecuadamente y alimentarte bien para maximizar tus ganancias musculares.\",\n    \"planes_por_intensidad\": {\n        \"baja\": {\n            \"justificacion\": \"Ideal para familiarizarse con los movimientos y mejorar la técnica.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 4\",\n                    \"grupo_muscular\": \"Hombros y abdomen\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 5\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 6\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia tecnica\",\n                    \"ejercicios\": []\n                }\n            ]\n        },\n        \"media\": {\n            \"justificacion\": \"Aumenta la carga y el volumen para promover el crecimiento muscular.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 4\",\n                    \"grupo_muscular\": \"Hombros y abdomen\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 5\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 6\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia moderada\",\n                    \"ejercicios\": []\n                }\n            ]\n        },\n        \"alta\": {\n            \"justificacion\": \"Entrenamiento intenso para maximizar el crecimiento muscular y la fuerza.\",\n            \"dias\": [\n                {\n                    \"dia\": \"Dia 1\",\n                    \"grupo_muscular\": \"Pecho y triceps\",\n                    \"foco\": \"Hipertrofia intensa\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 2\",\n                    \"grupo_muscular\": \"Espalda y biceps\",\n                    \"foco\": \"Hipertrofia intensa\",\n                    \"ejercicios\": []\n                },\n                {\n                    \"dia\": \"Dia 3\",\n                    \"grupo_muscular\": \"Piernas\",\n                    \"foco\": \"Hipertrofia intensa\",\n                    \"ejercicios\": []"
+      },
+      "perfil": {
+        "edad": 20,
+        "estatura": 175,
+        "peso": 70,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 6
+      },
+      "preferencias": {
+        "equipamiento": [],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "fitai-test-5": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "No pude construir la rutina en este intento. Intenta de nuevo.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 20,
+          "estatura": 175,
+          "peso": 70,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 6
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "",
+            "dias": []
+          },
+          "media": {
+            "justificacion": "",
+            "dias": []
+          },
+          "alta": {
+            "justificacion": "",
+            "dias": []
+          }
+        }
+      },
+      "perfil": {
+        "edad": 20,
+        "estatura": 175,
+        "peso": 70,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 6
+      },
+      "preferencias": {
+        "equipamiento": [],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "Tengo 20 anos, mido 175 cm, peso 70 kg, objetivo ganar masa muscular y entrenar 6 dias por semana"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "fitai-smoke-final": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "Tengo 28 anos, mido 170 cm, peso 72 kg, objetivo perder grasa y entrenar 4 dias. Quiero mancuernas y sin saltos"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "¡Estás en el camino correcto hacia tus objetivos! Enfócate en la técnica y controla el movimiento. Progresarás aumentando peso o repeticiones cada semana. Recuerda escuchar a tu cuerpo y mantener la constancia.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 28,
+          "estatura": 170,
+          "peso": 72,
+          "objetivo": "perder grasa",
+          "dias_disponibles": 4
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [
+            "mancuernas"
+          ],
+          "formatos": [],
+          "restricciones": [
+            "sin_saltos"
+          ],
+          "texto_libre": "Tengo 28 anos, mido 170 cm, peso 72 kg, objetivo perder grasa y entrenar 4 dias. Quiero mancuernas y sin saltos"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "Ideal para iniciarte y mejorar la técnica sin sobrecargar.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "media": {
+            "justificacion": "Aumenta la carga y el volumen para un progreso efectivo.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              }
+            ]
+          },
+          "alta": {
+            "justificacion": "Desafía tus límites con mayor intensidad y volumen.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia avanzada",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia avanzada",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia avanzada",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia avanzada",
+                "ejercicios": []
+              }
+            ]
+          }
+        }
+      },
+      "perfil": {
+        "edad": 28,
+        "estatura": 170,
+        "peso": 72,
+        "objetivo": "perder grasa",
+        "dias_disponibles": 4
+      },
+      "preferencias": {
+        "equipamiento": [
+          "mancuernas"
+        ],
+        "formatos": [],
+        "restricciones": [
+          "sin_saltos"
+        ],
+        "texto_libre": "Tengo 28 anos, mido 170 cm, peso 72 kg, objetivo perder grasa y entrenar 4 dias. Quiero mancuernas y sin saltos"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "anon": {
+      "chat": [
+        {
+          "role": "assistant",
+          "content": "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana."
+        },
+        {
+          "role": "user",
+          "content": "edad 25 anos, mido 175 cm, peso 75 objetico es ganar masa muscular y entrenar 4 dias por semana"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "¡Estás en el camino correcto hacia tus objetivos! Mantén una buena técnica en cada repetición y aumenta el peso progresivamente cada semana. Recuerda descansar adecuadamente entre series y mantener una buena alimentación para maximizar tus resultados.",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 25,
+          "estatura": 175,
+          "peso": 75,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 4
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "edad 25 anos, mido 175 cm, peso 75 objetico es ganar masa muscular y entrenar 4 dias por semana"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "Ideal para familiarizarse con los movimientos y mejorar la técnica.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "media": {
+            "justificacion": "Aumenta la carga y el volumen para estimular el crecimiento muscular.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              }
+            ]
+          },
+          "alta": {
+            "justificacion": "Maximiza el esfuerzo para un crecimiento muscular óptimo.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              }
+            ]
+          }
+        }
+      },
+      "perfil": {
+        "edad": 25,
+        "estatura": 175,
+        "peso": 75,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 4
+      },
+      "preferencias": {
+        "equipamiento": [],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "edad 25 anos, mido 175 cm, peso 75 objetico es ganar masa muscular y entrenar 4 dias por semana"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    }
+  }
+}
