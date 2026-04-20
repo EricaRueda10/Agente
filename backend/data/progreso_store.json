@@ -788,6 +788,196 @@
       "metricas_corporales": [],
       "racha_dias": 0,
       "ultimo_entreno_fecha": null
+    },
+    "google:117490040299038396491": {
+      "chat": [
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu objetivo principal. "
+        },
+        {
+          "role": "user",
+          "content": "resistencia"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Excelente decisión de trabajar en tu resistencia! Recuerda mantener una buena técnica y controlar tu respiración. Progresarás si aumentas gradualmente la intensidad cada semana. ¡A por ello! "
+        },
+        {
+          "role": "user",
+          "content": "dame una rutina de yoga"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Excelente decisión de trabajar en tu resistencia! Recuerda mantener una buena técnica y controlar tu respiración. Progresarás si aumentas gradualmente la intensidad cada semana. ¡A por ello! "
+        },
+        {
+          "role": "user",
+          "content": "dame una rutina de yoga"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu edad. "
+        },
+        {
+          "role": "user",
+          "content": "25"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu edad, tu estatura en cm. "
+        },
+        {
+          "role": "user",
+          "content": "25 años"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu estatura en cm, cuantos dias puedes entrenar por semana. "
+        },
+        {
+          "role": "user",
+          "content": "estatura 160"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu peso en kg, cuantos dias puedes entrenar por semana. "
+        },
+        {
+          "role": "user",
+          "content": "peso 80"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: tu objetivo principal, cuantos dias puedes entrenar por semana. "
+        },
+        {
+          "role": "user",
+          "content": "objetivo tonificar"
+        },
+        {
+          "role": "assistant",
+          "content": "Para armarte un plan de coach real, necesito: cuantos dias puedes entrenar por semana. "
+        },
+        {
+          "role": "user",
+          "content": "3 días a la semana"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Excelente decisión de tonificar! Concéntrate en la técnica y controla el movimiento. Aumenta el peso progresivamente cada semana para seguir desafiándote y ver resultados. Recuerda escuchar a tu cuerpo y descansar adecuadamente. "
+        },
+        {
+          "role": "user",
+          "content": "dame una rutina para bajar de peso en el gym"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "¡Excelente decisión de comenzar tu camino hacia un peso más saludable! Recuerda mantener una buena técnica en cada ejercicio y escucha a tu cuerpo. Progresar semanalmente es clave; intenta aumentar ligeramente el peso o las repeticiones cada semana. ¡Tú puedes lograrlo!",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 25,
+          "estatura": 160,
+          "peso": 80,
+          "objetivo": "bajar de peso",
+          "dias_disponibles": 3
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "25 años estatura 160 peso 80 objetivo tonificar 3 días a la semana dame una rutina para bajar de peso en el gym"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "Ideal para iniciarse y adaptarse al entrenamiento.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "media": {
+            "justificacion": "Aumenta la intensidad para mejorar la quema de grasa.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "alta": {
+            "justificacion": "Entrenamiento intenso para maximizar la quema de grasa.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas y hombros",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          }
+        }
+      },
+      "perfil": {
+        "edad": 25,
+        "estatura": 160,
+        "peso": 80,
+        "objetivo": "bajar de peso",
+        "dias_disponibles": 3
+      },
+      "preferencias": {
+        "equipamiento": [],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "25 años estatura 160 peso 80 objetivo tonificar 3 días a la semana dame una rutina para bajar de peso en el gym"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
     }
   }
 }

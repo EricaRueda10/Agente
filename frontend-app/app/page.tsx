@@ -175,9 +175,14 @@ export default function Home() {
   }, [planActivo, diaActivo]);
 
   useEffect(() => {
-    const primerDia = planActivo?.dias?.[0]?.dia || "";
-    setDiaActivo(primerDia);
-  }, [planActivo]);
+    if (!planActivo?.dias?.length) return;
+
+  const existe = planActivo.dias.some((d) => d.dia === diaActivo);
+
+  if (!existe) {
+    setDiaActivo(planActivo.dias[0].dia);
+  }
+}, [planActivo]);
 
   const claveDetalle = (diaPlan: DiaPlan, intensidad: Intensidad) => {
     return `${intensidad}|${diaPlan.dia}|${diaPlan.grupo_muscular}|${diaPlan.foco}`;

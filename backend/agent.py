@@ -199,7 +199,7 @@ def _extraer_perfil_chat(historial_chat):
         texto,
         [
             r"(?:tengo|edad)\s*(\d{1,2})\s*anos",
-            r"(\d{1,2})\s*anos",
+            r"(\d{1,2})\s*(?:anos|años)"
         ],
     )
     if match_edad:
@@ -208,8 +208,7 @@ def _extraer_perfil_chat(historial_chat):
     match_estatura_cm = _buscar_patron(
         texto,
         [
-            r"(?:mido|estatura)\s*(\d{3})\s*cm",
-            r"(?:mido|estatura)\s*(\d{3})\b",
+            r"(?:mido|estatura)\s*(\d{2,3})\s*(?:cm)?"
         ],
     )
     match_estatura_m = _buscar_patron(
@@ -219,17 +218,16 @@ def _extraer_perfil_chat(historial_chat):
             r"(?:mido|estatura)\s*(1,\d{1,2})\s*m",
         ],
     )
-    if match_estatura_cm:
-        estatura = int(match_estatura_cm.group(1))
-    elif match_estatura_m:
+    if match_estatura_m:
         valor = match_estatura_m.group(1).replace(",", ".")
         estatura = int(float(valor) * 100)
+    elif match_estatura_cm:
+        estatura = int(match_estatura_cm.group(1))
 
     match_peso = _buscar_patron(
         texto,
         [
-            r"(?:peso|peso actual)\s*(\d{2,3})\s*kg",
-            r"(?:peso|peso actual)\s*(\d{2,3})\b",
+            r"(?:peso|peso actual)\s*(\d{2,3})\s*(?:kg)?"
         ],
     )
     if match_peso:
@@ -240,6 +238,7 @@ def _extraer_perfil_chat(historial_chat):
         [
             r"(?:puedo entrenar|entreno|entrenar)\s*(\d)\s*dias",
             r"(\d)\s*dias\s*(?:por semana|a la semana)?",
+            r"(\d)\s*(?:dias|días)"
         ],
     )
     if match_dias:
@@ -249,6 +248,10 @@ def _extraer_perfil_chat(historial_chat):
         "perder grasa",
         "bajar grasa",
         "bajar de peso",
+        "deficit calorico",
+        "déficit calorico",
+        "deficit",
+        "quemar grasa",
         "ganar masa muscular",
         "hipertrofia",
         "tonificar",
@@ -531,6 +534,17 @@ Reglas:
 8. Respeta restricciones detectadas (ej: sin saltos, bajo impacto, cuidar rodilla).
 9. justificacion por intensidad debe ser breve (maximo 140 caracteres).
 10. mensaje_coach debe incluir feedback motivador, una recomendacion de ejecucion y una pauta de progresion semanal (maximo 320 caracteres).
+11. Si formatos incluye "tabata":
+- TODOS los dias deben ser en formato TABATA (intervalos)
+- foco debe mencionar intervalos o alta intensidad
+12. Si formatos incluye "calistenia":
+- SOLO usar peso corporal
+- ejercicios como push-ups, squats, pull-ups, planks
+13. Si formatos incluye "yoga":
+- rutina basada en movilidad, respiracion y estiramientos
+- usar nombres reales de posturas
+14. Si formatos incluye "hiit":
+- incluir bloques de alta intensidad + descanso
 """
 
     try:
@@ -665,11 +679,26 @@ Responde en formato JSON así:
     contenido = response.choices[0].message.content
     return _limpiar_y_parsear_json(contenido)
 
+def _fusionar_con_historial(perfil_actual, historial_chat):
+    perfil = perfil_actual.copy()
+
+    for mensaje in historial_chat:
+        if mensaje.get("role") != "user":
+            continue
+
+        extraido = _extraer_perfil_chat([mensaje])
+
+        for key, value in extraido.items():
+            if value:
+                perfil[key] = value
+
+    return perfil
 
 def generar_plan_conversacional(perfil, historial_chat):
     perfil_entrada = _normalizar_perfil(perfil or {})
     perfil_detectado_chat = _extraer_perfil_chat(historial_chat)
     perfil_final = _fusionar_perfiles(perfil_entrada, perfil_detectado_chat)
+    perfil_final = _fusionar_con_historial(perfil_final, historial_chat)
 
     faltantes = _campos_faltantes(perfil_final)
     preferencias = _extraer_preferencias_chat(historial_chat)
