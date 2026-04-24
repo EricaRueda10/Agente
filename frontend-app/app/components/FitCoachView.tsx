@@ -261,21 +261,6 @@ export default function FitCoachView({
 
                 {tieneRutina && (
                   <>
-                    <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-2">
-                      <p className="text-xs text-gray-400">Plan base cargado</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        {(planActivo?.dias || []).map((dia) => (
-                          <div key={dia.dia} className="rounded-md border border-gray-700 bg-black/20 p-2">
-                            <p className="font-semibold text-gray-100">{dia.dia}</p>
-                            <p className="text-gray-300">{dia.grupo_muscular}</p>
-                            <p className="text-gray-400">{dia.foco}</p>
-                            <p className="text-amber-300 mt-1">
-                              {dia.ejercicios.length > 0 ? `${dia.ejercicios.length} ejercicios` : "Cargando ejercicios..."}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
 
                     <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600">
                       <p className="text-xs text-gray-400 mb-2">Selecciona dia</p>
@@ -299,7 +284,9 @@ export default function FitCoachView({
                     {diaSeleccionado ? (
                       <div className="space-y-3">
                         <div className="p-3 bg-gray-800 rounded-lg border border-gray-600">
-                          <p className="font-semibold text-green-300">{diaSeleccionado.dia}</p>
+                          <p className="font-semibold text-green-300">{diaSeleccionado.dia} {" • "} {diaSeleccionado.ejercicios.length > 0
+                              ? `${diaSeleccionado.ejercicios.length} ejercicios`
+                              : "Cargando ejercicios..."}</p>
                           <p className="text-xs sm:text-sm text-gray-200">{diaSeleccionado.grupo_muscular}</p>
                           <p className="text-[11px] sm:text-xs text-gray-400">{diaSeleccionado.foco}</p>
                         </div>
