@@ -69,6 +69,7 @@ export default function Home() {
   const [errorAuth, setErrorAuth] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [diasEnCarga, setDiasEnCarga] = useState<string[]>([]);
   const [authUser, setAuthUser] = useState<GoogleSessionUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
@@ -131,6 +132,7 @@ export default function Home() {
       setChat(INITIAL_CHAT);
       setResultado(null);
       setError("");
+      setDiasEnCarga([]);
       return;
     }
 
@@ -204,6 +206,7 @@ export default function Home() {
     }
 
     detallesEnCursoRef.current.add(key);
+    setDiasEnCarga((prev) => (prev.includes(diaPlan.dia) ? prev : [...prev, diaPlan.dia]));
     setLoadingDetalle(true);
     try {
       const res = await fetch("http://127.0.0.1:8000/agente/chat/detalle-dia", {
@@ -271,6 +274,7 @@ export default function Home() {
       });
     } finally {
       detallesEnCursoRef.current.delete(key);
+      setDiasEnCarga((prev) => prev.filter((dia) => dia !== diaPlan.dia));
       if (detallesEnCursoRef.current.size === 0) {
         setLoadingDetalle(false);
       }
@@ -397,6 +401,7 @@ export default function Home() {
               const resultadoCoach: ResultadoCoach = parsed.resultado;
               detallesEnCursoRef.current.clear();
               detallesCargadosRef.current.clear();
+              setDiasEnCarga([]);
               setResultado(resultadoCoach);
 
               const primerDia =
@@ -427,6 +432,7 @@ export default function Home() {
               if (resultadoPosible) {
                 detallesEnCursoRef.current.clear();
                 detallesCargadosRef.current.clear();
+                setDiasEnCarga([]);
                 setError("");
                 setResultado(resultadoPosible);
 
@@ -492,6 +498,7 @@ export default function Home() {
     setResultado(null);
     setChat(INITIAL_CHAT);
     setError("");
+    setDiasEnCarga([]);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(GOOGLE_USER_KEY);
     }
@@ -545,6 +552,7 @@ export default function Home() {
       error={error}
       loading={loading}
       loadingDetalle={loadingDetalle}
+      diasEnCarga={diasEnCarga}
       tieneRutina={tieneRutina}
       planActivo={planActivo}
       diaSeleccionado={diaSeleccionado}

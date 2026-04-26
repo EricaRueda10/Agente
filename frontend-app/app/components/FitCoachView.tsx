@@ -68,6 +68,7 @@ type FitCoachViewProps = {
   error: string;
   loading: boolean;
   loadingDetalle: boolean;
+  diasEnCarga: string[];
   tieneRutina: boolean;
   planActivo: PlanIntensidad | undefined;
   diaSeleccionado: DiaPlan | null;
@@ -89,6 +90,7 @@ export default function FitCoachView({
   error,
   loading,
   loadingDetalle,
+  diasEnCarga,
   tieneRutina,
   planActivo,
   diaSeleccionado,
@@ -98,6 +100,43 @@ export default function FitCoachView({
   onIntensidadChange,
   onDiaChange,
 }: FitCoachViewProps) {
+  const estadoPerfil = resultado
+    ? [
+        {
+          key: "edad",
+          label: "Edad",
+          ok: Boolean(resultado.perfil_detectado.edad),
+          valor: resultado.perfil_detectado.edad ? `${resultado.perfil_detectado.edad} años` : "Falta",
+        },
+        {
+          key: "estatura",
+          label: "Estatura",
+          ok: Boolean(resultado.perfil_detectado.estatura),
+          valor: resultado.perfil_detectado.estatura ? `${resultado.perfil_detectado.estatura} cm` : "Falta",
+        },
+        {
+          key: "peso",
+          label: "Peso",
+          ok: Boolean(resultado.perfil_detectado.peso),
+          valor: resultado.perfil_detectado.peso ? `${resultado.perfil_detectado.peso} kg` : "Falta",
+        },
+        {
+          key: "objetivo",
+          label: "Objetivo",
+          ok: Boolean(resultado.perfil_detectado.objetivo?.trim()),
+          valor: resultado.perfil_detectado.objetivo?.trim() || "Falta",
+        },
+        {
+          key: "dias_disponibles",
+          label: "Días",
+          ok: Boolean(resultado.perfil_detectado.dias_disponibles),
+          valor: resultado.perfil_detectado.dias_disponibles
+            ? `${resultado.perfil_detectado.dias_disponibles} por semana`
+            : "Falta",
+        },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-3 sm:p-4 md:p-6 text-white">
       <div className="mx-auto w-full max-w-7xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-4 md:p-6">
@@ -186,6 +225,27 @@ export default function FitCoachView({
                   </p>
                 </div>
 
+                <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-2">
+                  <p className="text-xs text-gray-400">Estado de datos para armar rutina</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {estadoPerfil.map((campo) => (
+                      <div
+                        key={campo.key}
+                        className={`rounded-md border p-2 flex items-center justify-between ${
+                          campo.ok
+                            ? "border-emerald-600/70 bg-emerald-900/20"
+                            : "border-amber-600/70 bg-amber-900/20"
+                        }`}
+                      >
+                        <span className="text-gray-100">{campo.label}</span>
+                        <span className={`font-semibold ${campo.ok ? "text-emerald-300" : "text-amber-300"}`}>
+                          {campo.ok ? "✓" : "•"} {campo.valor}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {resultado.preferencias_detectadas && (
                   <div className="p-3 bg-purple-900/30 rounded-lg border border-purple-600 space-y-2">
                     <p className="text-sm font-semibold text-purple-300">✨ Preferencias detectadas:</p>
@@ -261,38 +321,34 @@ export default function FitCoachView({
 
                 {tieneRutina && (
                   <>
-                    <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-2">
-                      <p className="text-xs text-gray-400">Plan base cargado</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        {(planActivo?.dias || []).map((dia) => (
-                          <div key={dia.dia} className="rounded-md border border-gray-700 bg-black/20 p-2">
-                            <p className="font-semibold text-gray-100">{dia.dia}</p>
-                            <p className="text-gray-300">{dia.grupo_muscular}</p>
-                            <p className="text-gray-400">{dia.foco}</p>
-                            <p className="text-amber-300 mt-1">
-                              {dia.ejercicios.length > 0 ? `${dia.ejercicios.length} ejercicios` : "Cargando ejercicios..."}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
                     <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600">
                       <p className="text-xs text-gray-400 mb-2">Selecciona dia</p>
                       <div className="flex flex-wrap gap-2">
-                        {planActivo?.dias?.map((dia) => (
-                          <button
-                            key={dia.dia}
-                            onClick={() => onDiaChange(dia.dia)}
-                            className={`px-3 py-1.5 rounded-md text-sm border ${
-                              diaActivo === dia.dia
-                                ? "bg-blue-500 text-black border-blue-400"
-                                : "bg-gray-900 border-gray-700 text-gray-200"
-                            }`}
-                          >
-                            {dia.dia}
-                          </button>
-                        ))}
+                        {planActivo?.dias?.map((dia) => {
+                          const detallePendiente = diasEnCarga.includes(dia.dia);
+                          return (
+                            <button
+                              key={dia.dia}
+                              onClick={() => onDiaChange(dia.dia)}
+                              className={`px-3 py-1.5 rounded-md text-sm border ${
+                                diaActivo === dia.dia
+                                  ? "bg-blue-500 text-black border-blue-400"
+                                  : "bg-gray-900 border-gray-700 text-gray-200"
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-2">
+                                {dia.dia}
+                                {detallePendiente && (
+                                  <span
+                                    className="inline-block h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"
+                                    aria-label="Cargando detalle"
+                                    title="Cargando detalle"
+                                  />
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
