@@ -119,49 +119,65 @@ def _normalizar_texto(texto):
 
 
 def _extraer_preferencias_chat(historial_chat):
-    texto_usuario = " ".join(
-        m.get("content", "") for m in historial_chat if m.get("role") == "user"
-    )
-    texto = _normalizar_texto(texto_usuario)
-
     equipamiento = []
     formatos = []
     restricciones = []
+    mensajes_usuario = [m.get("content", "") for m in historial_chat if m.get("role") == "user"]
+    for mensaje in mensajes_usuario:
+        texto = _normalizar_texto(mensaje)
 
-    if "mancuerna" in texto or "mancuernas" in texto:
-        equipamiento.append("mancuernas")
-    if "maquina" in texto or "maquinas" in texto:
-        equipamiento.append("maquinas")
-    if "barra" in texto:
-        equipamiento.append("barra")
-    if "peso corporal" in texto or "calistenia" in texto:
-        equipamiento.append("peso_corporal")
-    if "banda" in texto or "bandas" in texto or "liga" in texto:
-        equipamiento.append("bandas")
+        if any(
+            frase in texto
+            for frase in (
+                "sin ninguna preferencia",
+                "sin preferencia",
+                "reinicia la rutina",
+                "reinicia rutina",
+                "reiniciar la rutina",
+                "quitar preferencias",
+                "quita preferencias",
+            )
+        ):
+            equipamiento = []
+            formatos = []
+            restricciones = []
 
-    if "tabata" in texto:
-        formatos.append("tabata")
-    if "hiit" in texto:
-        formatos.append("hiit")
-    if "circuito" in texto:
-        formatos.append("circuito")
-    if "hipertrof" in texto:
-        formatos.append("hipertrofia")
-    if "fuerza" in texto:
-        formatos.append("fuerza")
-    if "quema grasa" in texto or "quemar grasa" in texto:
-        formatos.append("quema_grasa")
-    if "funcional" in texto:
-        formatos.append("funcional")
+        if "mancuerna" in texto or "mancuernas" in texto:
+            equipamiento = ["mancuernas"]
+        if "maquina" in texto or "maquinas" in texto:
+            equipamiento = ["maquinas"]
+        if "barra" in texto:
+            equipamiento = ["barra"]
+        if "peso corporal" in texto or "calistenia" in texto:
+            equipamiento = ["peso_corporal"]
+        if "banda" in texto or "bandas" in texto or "liga" in texto:
+            equipamiento = ["bandas"]
 
-    if "sin salto" in texto or "sin saltos" in texto:
-        restricciones.append("sin_saltos")
-    if "bajo impacto" in texto:
-        restricciones.append("bajo_impacto")
-    if "rodilla" in texto:
-        restricciones.append("cuidar_rodilla")
-    if "espalda" in texto and "dolor" in texto:
-        restricciones.append("cuidar_espalda")
+        if "tabata" in texto:
+            formatos = ["tabata"]
+        if "hiit" in texto:
+            formatos = ["hiit"]
+        if "circuito" in texto:
+            formatos = ["circuito"]
+        if "hipertrof" in texto:
+            formatos = ["hipertrofia"]
+        if "fuerza" in texto:
+            formatos = ["fuerza"]
+        if "quema grasa" in texto or "quemar grasa" in texto:
+            formatos = ["quema_grasa"]
+        if "funcional" in texto:
+            formatos = ["funcional"]
+
+        if "sin salto" in texto or "sin saltos" in texto:
+            restricciones = ["sin_saltos"]
+        if "bajo impacto" in texto:
+            restricciones = ["bajo_impacto"]
+        if "rodilla" in texto:
+            restricciones = ["cuidar_rodilla"]
+        if "espalda" in texto and "dolor" in texto:
+            restricciones = ["cuidar_espalda"]
+
+    texto_usuario = " ".join(mensajes_usuario)
 
     return {
         "equipamiento": sorted(list(set(equipamiento))),
@@ -342,11 +358,11 @@ def _extraer_perfil_chat(historial_chat):
 
 def _fusionar_perfiles(perfil_entrada, perfil_extraido):
     return {
-        "edad": perfil_entrada.get("edad") or perfil_extraido.get("edad"),
-        "estatura": perfil_entrada.get("estatura") or perfil_extraido.get("estatura"),
-        "peso": perfil_entrada.get("peso") or perfil_extraido.get("peso"),
-        "objetivo": perfil_entrada.get("objetivo") or perfil_extraido.get("objetivo"),
-        "dias_disponibles": perfil_entrada.get("dias_disponibles") or perfil_extraido.get("dias_disponibles"),
+        "edad": perfil_extraido.get("edad") if perfil_extraido.get("edad") is not None else perfil_entrada.get("edad"),
+        "estatura": perfil_extraido.get("estatura") if perfil_extraido.get("estatura") is not None else perfil_entrada.get("estatura"),
+        "peso": perfil_extraido.get("peso") if perfil_extraido.get("peso") is not None else perfil_entrada.get("peso"),
+        "objetivo": perfil_extraido.get("objetivo") if perfil_extraido.get("objetivo") else perfil_entrada.get("objetivo"),
+        "dias_disponibles": perfil_extraido.get("dias_disponibles") if perfil_extraido.get("dias_disponibles") is not None else perfil_entrada.get("dias_disponibles"),
     }
 
 
@@ -441,6 +457,36 @@ def _resumen_campos_capturados(perfil):
     return partes
 
 
+def _siguiente_campo_faltante(faltantes, perfil=None, intentos=None):
+    perfil = perfil or {}
+    intentos = intentos or {}
+
+    # Si el usuario intento dar un campo y fallo validacion, priorizar ese campo.
+    for campo in ("estatura", "peso", "dias_disponibles", "objetivo", "edad"):
+        if campo in faltantes and campo in intentos:
+            return campo
+
+    # Flujo mas natural: si ya hay datos fisicos u objetivo, no bloquear por edad de inmediato.
+    tiene_contexto = any(
+        [
+            perfil.get("estatura"),
+            perfil.get("peso"),
+            perfil.get("objetivo"),
+            perfil.get("dias_disponibles"),
+        ]
+    )
+
+    if tiene_contexto:
+        orden = ["estatura", "peso", "objetivo", "dias_disponibles", "edad"]
+    else:
+        orden = ["edad", "estatura", "peso", "objetivo", "dias_disponibles"]
+
+    for campo in orden:
+        if campo in faltantes:
+            return campo
+    return faltantes[0] if faltantes else None
+
+
 def _mensaje_faltantes(faltantes, perfil=None, intentos=None):
     intentos = intentos or {}
     perfil = perfil or {}
@@ -460,24 +506,46 @@ def _mensaje_faltantes(faltantes, perfil=None, intentos=None):
         "dias_disponibles": "Dias por semana: ejemplo 3, 4, 5 o seis dias.",
     }
 
+    preguntas = {
+        "edad": "¿Que edad tienes?",
+        "estatura": "¿Cual es tu estatura?",
+        "peso": "¿Cual es tu peso actual?",
+        "objetivo": "¿Cual es tu objetivo principal?",
+        "dias_disponibles": "¿Cuantos dias por semana puedes entrenar?",
+    }
+
     capturados = _resumen_campos_capturados(perfil)
     prefijo_capturados = ""
     if capturados:
         prefijo_capturados = "Ya tengo: " + ", ".join(capturados) + ". "
 
-    if len(faltantes) == 1:
-        campo = faltantes[0]
-        prefijo = ""
-        if campo in intentos:
-            prefijo = "Te entendi, pero ese dato no lo pude validar. "
-        return prefijo_capturados + prefijo + "Solo me falta " + etiquetas.get(campo, campo) + ". " + ayudas.get(campo, "")
+    campo_objetivo = _siguiente_campo_faltante(faltantes, perfil, intentos)
+    if not campo_objetivo:
+        return "Perfecto, ya tengo todo lo necesario para construir tu rutina."
 
-    campos = [etiquetas.get(campo, campo) for campo in faltantes]
-    ejemplos = [ayudas.get(campo, "") for campo in faltantes[:2] if ayudas.get(campo)]
-    mensaje = prefijo_capturados + "Para armarte un plan de coach real, necesito: " + ", ".join(campos) + "."
-    if ejemplos:
-        mensaje += " " + " ".join(ejemplos)
-    return mensaje
+    prefijo = ""
+    if campo_objetivo in intentos:
+        prefijo = "Te entendi, pero ese dato no lo pude validar. "
+
+    if not capturados:
+        return (
+            "Vamos paso a paso para hacerlo facil. "
+            + preguntas.get(campo_objetivo, "")
+            + " "
+            + ayudas.get(campo_objetivo, "")
+            + " Si quieres, tambien puedes mandarme varios datos en un solo mensaje."
+        )
+
+    return (
+        prefijo_capturados
+        + prefijo
+        + "Ahora solo dime "
+        + etiquetas.get(campo_objetivo, campo_objetivo)
+        + ". "
+        + preguntas.get(campo_objetivo, "")
+        + " "
+        + ayudas.get(campo_objetivo, "")
+    )
 
 
 def _planes_vacios():

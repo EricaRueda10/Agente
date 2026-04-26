@@ -59,6 +59,7 @@ const INTENSIDADES: Intensidad[] = ["baja", "media", "alta"];
 
 type FitCoachViewProps = {
   topBar?: ReactNode;
+  systemMessage?: string;
   chatHabilitado?: boolean;
   mensaje: string;
   chat: ChatMessage[];
@@ -81,6 +82,7 @@ type FitCoachViewProps = {
 
 export default function FitCoachView({
   topBar,
+  systemMessage,
   chatHabilitado = true,
   mensaje,
   chat,
@@ -143,6 +145,12 @@ export default function FitCoachView({
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-5 text-center">🏋️ FitAI Coach</h1>
 
         {topBar && <div className="mb-4">{topBar}</div>}
+
+        {systemMessage && (
+          <div className="mb-4 rounded-lg border border-emerald-600 bg-emerald-900/30 px-4 py-3 text-sm text-emerald-100">
+            {systemMessage}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg border border-red-600 bg-red-900/40 text-red-200 text-sm">
@@ -216,30 +224,27 @@ export default function FitCoachView({
 
             {resultado && (
               <div className="space-y-4">
-                <div className="p-3 bg-gray-800 rounded-lg border border-gray-600 text-sm">
-                  <p>
-                    <span className="text-gray-400">Perfil detectado:</span>{" "}
-                    edad {resultado.perfil_detectado.edad ?? "-"}, estatura {resultado.perfil_detectado.estatura ?? "-"} cm,
-                    peso {resultado.perfil_detectado.peso ?? "-"} kg, objetivo {resultado.perfil_detectado.objetivo || "-"},
-                    dias {resultado.perfil_detectado.dias_disponibles ?? "-"}
-                  </p>
-                </div>
-
-                <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-2">
-                  <p className="text-xs text-gray-400">Estado de datos para armar rutina</p>
+                <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-100">Datos para armar tu rutina</p>
+                    <p className="text-xs text-gray-400 mt-1">El coach va completando cada dato a medida que conversas.</p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {estadoPerfil.map((campo) => (
                       <div
                         key={campo.key}
-                        className={`rounded-md border p-2 flex items-center justify-between ${
+                        className={`rounded-md border p-2.5 flex items-center justify-between gap-3 ${
                           campo.ok
                             ? "border-emerald-600/70 bg-emerald-900/20"
                             : "border-amber-600/70 bg-amber-900/20"
                         }`}
                       >
-                        <span className="text-gray-100">{campo.label}</span>
-                        <span className={`font-semibold ${campo.ok ? "text-emerald-300" : "text-amber-300"}`}>
-                          {campo.ok ? "✓" : "•"} {campo.valor}
+                        <span className="text-gray-100 font-medium">{campo.label}</span>
+                        <span className={`font-semibold text-right ${campo.ok ? "text-emerald-300" : "text-amber-300"}`}>
+                          {campo.ok ? "Completo" : "Pendiente"}
+                          <span className="block text-[11px] font-normal mt-0.5 text-gray-300">
+                            {campo.ok ? campo.valor : campo.valor}
+                          </span>
                         </span>
                       </div>
                     ))}

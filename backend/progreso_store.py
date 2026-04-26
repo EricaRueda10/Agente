@@ -174,6 +174,24 @@ def save_contexto_chat(
         _write_store(data)
 
 
+def reiniciar_contexto_chat(user_id: str) -> Dict[str, Any]:
+    with _LOCK:
+        data = _read_store()
+        users = data.setdefault("users", {})
+        users[user_id] = {
+            "chat": [],
+            "ultimo_resultado": None,
+            "perfil": {},
+            "preferencias": {},
+            "sesiones": [],
+            "metricas_corporales": [],
+            "racha_dias": 0,
+            "ultimo_entreno_fecha": None,
+        }
+        _write_store(data)
+        return users[user_id]
+
+
 def get_contexto_chat(user_id: str) -> Dict[str, Any]:
     with _LOCK:
         data = _read_store()
