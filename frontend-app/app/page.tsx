@@ -399,6 +399,7 @@ export default function Home() {
 } finally {
   setLoading(false);
 }
+  };
 
   const tieneRutina = resultado?.estado === "rutina_lista";
 
@@ -556,4 +557,3 @@ export default function Home() {
     />
   );
   }
-}
