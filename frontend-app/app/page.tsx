@@ -141,7 +141,7 @@ export default function Home() {
 
     const cargarContexto = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/progreso/contexto/${encodeURIComponent(`google:${authUser.sub}`)}`);
+        const res = await fetch(`https://agente-backend-65g2.onrender.com/progreso/contexto/${encodeURIComponent(`google:${authUser.sub}`)}`);
         if (!res.ok) {
           setChat(INITIAL_CHAT);
           setResultado(null);
@@ -217,7 +217,7 @@ export default function Home() {
     setDiasEnCarga((prev) => (prev.includes(diaPlan.dia) ? prev : [...prev, diaPlan.dia]));
     setLoadingDetalle(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/agente/chat/detalle-dia", {
+      const res = await fetch("https://agente-backend-65g2.onrender.com/agente/chat/detalle-dia", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -328,7 +328,7 @@ export default function Home() {
     setMensaje("");
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/agente/chat/stream", {
+      const res = await fetch("https://agente-backend-65g2.onrender.com/agente/chat/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -462,7 +462,7 @@ export default function Home() {
         }
       }
     } catch {
-      setError("No hay conexion con el backend en http://127.0.0.1:8000");
+      setError("No hay conexion con el backend en https://agente-backend-65g2.onrender.com");
     } finally {
       setLoading(false);
     }
@@ -519,7 +519,7 @@ export default function Home() {
 
     setReiniciando(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/agente/chat/reiniciar", {
+      const res = await fetch("https://agente-backend-65g2.onrender.com/agente/chat/reiniciar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -548,7 +548,7 @@ export default function Home() {
       setMensajeSistema("Agente reiniciado correctamente. La conversacion comenzo desde cero.");
       window.setTimeout(() => setMensajeSistema(""), 4500);
     } catch {
-      setError("No hay conexion con el backend en http://127.0.0.1:8000");
+      setError("No hay conexion con el backend en https://agente-backend-65g2.onrender.com");
     } finally {
       setReiniciando(false);
     }
