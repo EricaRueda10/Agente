@@ -360,9 +360,7 @@ export default function FitCoachView({
                     {diaSeleccionado ? (
                       <div className="space-y-3">
                         <div className="p-3 bg-gray-800 rounded-lg border border-gray-600">
-                          <p className="font-semibold text-green-300">{diaSeleccionado.dia} {" • "} {diaSeleccionado.ejercicios.length > 0
-                              ? `${diaSeleccionado.ejercicios.length} ejercicios`
-                              : "Cargando ejercicios..."}</p>
+                          <p className="font-semibold text-green-300">{diaSeleccionado.dia}</p>
                           <p className="text-xs sm:text-sm text-gray-200">{diaSeleccionado.grupo_muscular}</p>
                           <p className="text-[11px] sm:text-xs text-gray-400">{diaSeleccionado.foco}</p>
                         </div>
