@@ -230,7 +230,6 @@ def _inferir_estatura_cm(valor_str, unidad):
         cm = int(round(valor * 100))
         return cm if 120 <= cm <= 230 else None
 
-    # Sin unidad explicita: inferencia por rango.
     if valor >= 100:
         cm = int(round(valor))
         return cm if 120 <= cm <= 230 else None
@@ -261,55 +260,6 @@ def _extraer_perfil_chat(historial_chat):
     objetivo = ""
     dias_disponibles = None
 
-    match_edad = _buscar_patron(
-        texto,
-        [
-            r"(?:tengo|edad)\s*(\d{1,2})\s*anos",
-            r"(\d{1,2})\s*(?:anos|años)"
-        ],
-    )
-    if match_edad:
-        edad = int(match_edad.group(1))
-
-    match_estatura_cm = _buscar_patron(
-        texto,
-        [
-            r"(?:mido|estatura)\s*(\d{2,3})\s*(?:cm)?"
-        ],
-    )
-    match_estatura_m = _buscar_patron(
-        texto,
-        [
-            r"(?:mido|estatura)\s*(1\.\d{1,2})\s*m",
-            r"(?:mido|estatura)\s*(1,\d{1,2})\s*m",
-        ],
-    )
-    if match_estatura_m:
-        valor = match_estatura_m.group(1).replace(",", ".")
-        estatura = int(float(valor) * 100)
-    elif match_estatura_cm:
-        estatura = int(match_estatura_cm.group(1))
-
-    match_peso = _buscar_patron(
-        texto,
-        [
-            r"(?:peso|peso actual)\s*(\d{2,3})\s*(?:kg)?"
-        ],
-    )
-    if match_peso:
-        peso = int(match_peso.group(1))
-
-    match_dias = _buscar_patron(
-        texto,
-        [
-            r"(?:puedo entrenar|entreno|entrenar)\s*(\d)\s*dias",
-            r"(\d)\s*dias\s*(?:por semana|a la semana)?",
-            r"(\d)\s*(?:dias|días)"
-        ],
-    )
-    if match_dias:
-        dias_disponibles = int(match_dias.group(1))
-
     objetivos = [
         "perder grasa",
         "bajar grasa",
@@ -326,6 +276,7 @@ def _extraer_perfil_chat(historial_chat):
         "recomposicion corporal",
         "mantenerme",
     ]
+
     for mensaje in [m.get("content", "") for m in historial_chat if m.get("role") == "user"]:
         texto = _normalizar_texto(mensaje)
 
@@ -342,7 +293,6 @@ def _extraer_perfil_chat(historial_chat):
             if 12 <= valor_edad <= 90:
                 edad = valor_edad
 
-        # Altura con o sin unidad: "mido 1.75", "mido 1,75", "estatura 175", "altura 175 cm".
         match_estatura = _buscar_patron(
             texto,
             [
@@ -358,7 +308,6 @@ def _extraer_perfil_chat(historial_chat):
             if altura_cm:
                 estatura = altura_cm
 
-        # Peso con o sin kg explicito: "peso 75", "75 kg", "peso actual 74.5".
         match_peso = _buscar_patron(
             texto,
             [
@@ -371,7 +320,6 @@ def _extraer_perfil_chat(historial_chat):
             if peso_kg:
                 peso = peso_kg
 
-        # Dias semanales con numero o palabra: "5 dias", "cinco dias", "puedo entrenar 4".
         match_dias_num = _buscar_patron(
             texto,
             [
@@ -514,12 +462,10 @@ def _siguiente_campo_faltante(faltantes, perfil=None, intentos=None):
     perfil = perfil or {}
     intentos = intentos or {}
 
-    # Si el usuario intento dar un campo y fallo validacion, priorizar ese campo.
     for campo in ("estatura", "peso", "dias_disponibles", "objetivo", "edad"):
         if campo in faltantes and campo in intentos:
             return campo
 
-    # Flujo mas natural: si ya hay datos fisicos u objetivo, no bloquear por edad de inmediato.
     tiene_contexto = any(
         [
             perfil.get("estatura"),
@@ -962,6 +908,7 @@ Responde en formato JSON así:
     contenido = response.choices[0].message.content
     return _limpiar_y_parsear_json(contenido)
 
+
 def _fusionar_con_historial(perfil_actual, historial_chat):
     perfil = perfil_actual.copy()
 
@@ -976,6 +923,7 @@ def _fusionar_con_historial(perfil_actual, historial_chat):
                 perfil[key] = value
 
     return perfil
+
 
 def generar_plan_conversacional(perfil, historial_chat):
     perfil_entrada = _normalizar_perfil(perfil or {})
