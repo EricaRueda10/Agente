@@ -59,6 +59,7 @@ const INTENSIDADES: Intensidad[] = ["baja", "media", "alta"];
 
 type FitCoachViewProps = {
   topBar?: ReactNode;
+  systemMessage?: string;
   chatHabilitado?: boolean;
   mensaje: string;
   chat: ChatMessage[];
@@ -68,6 +69,7 @@ type FitCoachViewProps = {
   error: string;
   loading: boolean;
   loadingDetalle: boolean;
+  diasEnCarga: string[];
   tieneRutina: boolean;
   planActivo: PlanIntensidad | undefined;
   diaSeleccionado: DiaPlan | null;
@@ -80,6 +82,7 @@ type FitCoachViewProps = {
 
 export default function FitCoachView({
   topBar,
+  systemMessage,
   chatHabilitado = true,
   mensaje,
   chat,
@@ -89,6 +92,7 @@ export default function FitCoachView({
   error,
   loading,
   loadingDetalle,
+  diasEnCarga,
   tieneRutina,
   planActivo,
   diaSeleccionado,
@@ -98,12 +102,55 @@ export default function FitCoachView({
   onIntensidadChange,
   onDiaChange,
 }: FitCoachViewProps) {
+  const estadoPerfil = resultado
+    ? [
+        {
+          key: "edad",
+          label: "Edad",
+          ok: Boolean(resultado.perfil_detectado.edad),
+          valor: resultado.perfil_detectado.edad ? `${resultado.perfil_detectado.edad} años` : "Falta",
+        },
+        {
+          key: "estatura",
+          label: "Estatura",
+          ok: Boolean(resultado.perfil_detectado.estatura),
+          valor: resultado.perfil_detectado.estatura ? `${resultado.perfil_detectado.estatura} cm` : "Falta",
+        },
+        {
+          key: "peso",
+          label: "Peso",
+          ok: Boolean(resultado.perfil_detectado.peso),
+          valor: resultado.perfil_detectado.peso ? `${resultado.perfil_detectado.peso} kg` : "Falta",
+        },
+        {
+          key: "objetivo",
+          label: "Objetivo",
+          ok: Boolean(resultado.perfil_detectado.objetivo?.trim()),
+          valor: resultado.perfil_detectado.objetivo?.trim() || "Falta",
+        },
+        {
+          key: "dias_disponibles",
+          label: "Días",
+          ok: Boolean(resultado.perfil_detectado.dias_disponibles),
+          valor: resultado.perfil_detectado.dias_disponibles
+            ? `${resultado.perfil_detectado.dias_disponibles} por semana`
+            : "Falta",
+        },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-3 sm:p-4 md:p-6 text-white">
       <div className="mx-auto w-full max-w-7xl bg-gray-900/80 backdrop-blur-lg border border-gray-700 rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-4 md:p-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-5 text-center">🏋️ FitAI Coach</h1>
 
         {topBar && <div className="mb-4">{topBar}</div>}
+
+        {systemMessage && (
+          <div className="mb-4 rounded-lg border border-emerald-600 bg-emerald-900/30 px-4 py-3 text-sm text-emerald-100">
+            {systemMessage}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-lg border border-red-600 bg-red-900/40 text-red-200 text-sm">
@@ -177,13 +224,31 @@ export default function FitCoachView({
 
             {resultado && (
               <div className="space-y-4">
-                <div className="p-3 bg-gray-800 rounded-lg border border-gray-600 text-sm">
-                  <p>
-                    <span className="text-gray-400">Perfil detectado:</span>{" "}
-                    edad {resultado.perfil_detectado.edad ?? "-"}, estatura {resultado.perfil_detectado.estatura ?? "-"} cm,
-                    peso {resultado.perfil_detectado.peso ?? "-"} kg, objetivo {resultado.perfil_detectado.objetivo || "-"},
-                    dias {resultado.perfil_detectado.dias_disponibles ?? "-"}
-                  </p>
+                <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-100">Datos para armar tu rutina</p>
+                    <p className="text-xs text-gray-400 mt-1">El coach va completando cada dato a medida que conversas.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {estadoPerfil.map((campo) => (
+                      <div
+                        key={campo.key}
+                        className={`rounded-md border p-2.5 flex items-center justify-between gap-3 ${
+                          campo.ok
+                            ? "border-emerald-600/70 bg-emerald-900/20"
+                            : "border-amber-600/70 bg-amber-900/20"
+                        }`}
+                      >
+                        <span className="text-gray-100 font-medium">{campo.label}</span>
+                        <span className={`font-semibold text-right ${campo.ok ? "text-emerald-300" : "text-amber-300"}`}>
+                          {campo.ok ? "Completo" : "Pendiente"}
+                          <span className="block text-[11px] font-normal mt-0.5 text-gray-300">
+                            {campo.ok ? campo.valor : campo.valor}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {resultado.preferencias_detectadas && (
@@ -261,23 +326,38 @@ export default function FitCoachView({
 
                 {tieneRutina && (
                   <>
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/AB
                     <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600">
                       <p className="text-xs text-gray-400 mb-2">Selecciona dia</p>
                       <div className="flex flex-wrap gap-2">
-                        {planActivo?.dias?.map((dia) => (
-                          <button
-                            key={dia.dia}
-                            onClick={() => onDiaChange(dia.dia)}
-                            className={`px-3 py-1.5 rounded-md text-sm border ${
-                              diaActivo === dia.dia
-                                ? "bg-blue-500 text-black border-blue-400"
-                                : "bg-gray-900 border-gray-700 text-gray-200"
-                            }`}
-                          >
-                            {dia.dia}
-                          </button>
-                        ))}
+                        {planActivo?.dias?.map((dia) => {
+                          const detallePendiente = diasEnCarga.includes(dia.dia);
+                          return (
+                            <button
+                              key={dia.dia}
+                              onClick={() => onDiaChange(dia.dia)}
+                              className={`px-3 py-1.5 rounded-md text-sm border ${
+                                diaActivo === dia.dia
+                                  ? "bg-blue-500 text-black border-blue-400"
+                                  : "bg-gray-900 border-gray-700 text-gray-200"
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-2">
+                                {dia.dia}
+                                {detallePendiente && (
+                                  <span
+                                    className="inline-block h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"
+                                    aria-label="Cargando detalle"
+                                    title="Cargando detalle"
+                                  />
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 

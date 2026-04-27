@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
 import json
-from progreso_store import get_contexto_chat, save_contexto_chat
+from progreso_store import get_contexto_chat, save_contexto_chat, reiniciar_contexto_chat
 
 app = FastAPI()
 
@@ -57,6 +57,10 @@ class DatosDetalleDia(BaseModel):
     grupo_muscular: str
     foco: str
 
+
+class DatosReinicioChat(BaseModel):
+    user_id: str
+
 historial_usuario = []
 
 @app.post("/agente")
@@ -78,11 +82,21 @@ def agente(data: DatosUsuario):
 
 @app.post("/agente/chat")
 def agente_chat(data: DatosConversacion):
-    perfil = data.perfil.model_dump() if data.perfil else {}
     user_id = (data.user_id or "").strip()
 
     if not user_id:
         raise HTTPException(status_code=401, detail="Debes iniciar sesion con Google para usar el chat.")
+
+    contexto = get_contexto_chat(user_id)
+    perfil_base = contexto.get("perfil", {}) if isinstance(contexto, dict) else {}
+    perfil_chat = data.perfil.model_dump() if data.perfil else {}
+    perfil = {
+        "edad": perfil_chat.get("edad") if perfil_chat.get("edad") is not None else perfil_base.get("edad"),
+        "estatura": perfil_chat.get("estatura") if perfil_chat.get("estatura") is not None else perfil_base.get("estatura"),
+        "peso": perfil_chat.get("peso") if perfil_chat.get("peso") is not None else perfil_base.get("peso"),
+        "objetivo": perfil_chat.get("objetivo") if perfil_chat.get("objetivo") else perfil_base.get("objetivo"),
+        "dias_disponibles": perfil_chat.get("dias_disponibles") if perfil_chat.get("dias_disponibles") is not None else perfil_base.get("dias_disponibles"),
+    }
 
     resultado = generar_plan_conversacional(
         perfil=perfil,
@@ -104,13 +118,23 @@ def agente_chat_stream(data: DatosConversacion):
     def event_generator():
         yield "event: start\ndata: {}\n\n"
 
-        perfil = data.perfil.model_dump() if data.perfil else {}
         user_id = (data.user_id or "").strip()
 
         if not user_id:
             payload = json.dumps({"message": "Debes iniciar sesion con Google para usar el chat."}, ensure_ascii=False)
             yield f"event: error\ndata: {payload}\n\n"
             return
+
+        contexto = get_contexto_chat(user_id)
+        perfil_base = contexto.get("perfil", {}) if isinstance(contexto, dict) else {}
+        perfil_chat = data.perfil.model_dump() if data.perfil else {}
+        perfil = {
+            "edad": perfil_chat.get("edad") if perfil_chat.get("edad") is not None else perfil_base.get("edad"),
+            "estatura": perfil_chat.get("estatura") if perfil_chat.get("estatura") is not None else perfil_base.get("estatura"),
+            "peso": perfil_chat.get("peso") if perfil_chat.get("peso") is not None else perfil_base.get("peso"),
+            "objetivo": perfil_chat.get("objetivo") if perfil_chat.get("objetivo") else perfil_base.get("objetivo"),
+            "dias_disponibles": perfil_chat.get("dias_disponibles") if perfil_chat.get("dias_disponibles") is not None else perfil_base.get("dias_disponibles"),
+        }
 
         resultado = generar_plan_conversacional(
             perfil=perfil,
@@ -167,3 +191,13 @@ def agente_chat_detalle_dia(data: DatosDetalleDia):
 @app.get("/progreso/contexto/{user_id}")
 def progreso_contexto(user_id: str):
     return {"resultado": get_contexto_chat(user_id)}
+
+
+@app.post("/agente/chat/reiniciar")
+def agente_chat_reiniciar(data: DatosReinicioChat):
+    user_id = (data.user_id or "").strip()
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requerido")
+
+    reiniciar_contexto_chat(user_id)
+    return {"resultado": "ok"}

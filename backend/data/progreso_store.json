@@ -624,26 +624,34 @@
       "ultimo_entreno_fecha": null
     },
     "google:100796503012412748954": {
+      "chat": [],
+      "ultimo_resultado": null,
+      "perfil": {},
+      "preferencias": {},
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "google:test-reset": {
+      "chat": [],
+      "ultimo_resultado": null,
+      "perfil": {},
+      "preferencias": {},
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "google:update-flow": {
       "chat": [
         {
-          "role": "assistant",
-          "content": "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana."
-        },
-        {
           "role": "user",
-          "content": "hola"
-        },
-        {
-          "role": "assistant",
-          "content": "Para armarte un plan de coach real, necesito: tu edad, tu estatura en cm, tu peso en kg, tu objetivo principal, cuantos dias puedes entrenar por semana. "
-        },
-        {
-          "role": "user",
-          "content": "edad 25 años, mido 175, peso 75 quiero ganar masa muscular y puedo entrenr 5 dias por smena, la rutina debe ser solo con mancuernas"
+          "content": "ahora cambiala a 4 dias y solo maquinas"
         }
       ],
       "ultimo_resultado": {
-        "mensaje_coach": "¡Excelente decisión de enfocarte en ganar masa muscular! Recuerda mantener una buena técnica en cada ejercicio y controlar el tempo. Progresiona aumentando peso o repeticiones cada semana. ¡Tú puedes lograrlo!",
+        "mensaje_coach": "¡Estás en el camino correcto hacia tus objetivos! Enfócate en la técnica y controla el peso. Aumenta progresivamente el peso cada semana para seguir desafiando tus músculos.",
         "estado": "rutina_lista",
         "campos_faltantes": [],
         "perfil_detectado": {
@@ -655,15 +663,15 @@
         },
         "preferencias_detectadas": {
           "equipamiento": [
-            "mancuernas"
+            "maquinas"
           ],
           "formatos": [],
           "restricciones": [],
-          "texto_libre": "hola edad 25 años, mido 175, peso 75 quiero ganar masa muscular y puedo entrenr 5 dias por smena, la rutina debe ser solo con mancuernas"
+          "texto_libre": "ahora cambiala a 4 dias y solo maquinas"
         },
         "planes_por_intensidad": {
           "baja": {
-            "justificacion": "Ideal para principiantes, enfocado en técnica y adaptación.",
+            "justificacion": "Ideal para familiarizarse con las máquinas y mejorar la técnica.",
             "dias": [
               {
                 "dia": "Dia 1",
@@ -698,71 +706,71 @@
             ]
           },
           "media": {
-            "justificacion": "Aumenta la carga y volumen, ideal para progresar en fuerza y masa.",
+            "justificacion": "Aumenta la carga y el volumen para estimular el crecimiento muscular.",
             "dias": [
               {
                 "dia": "Dia 1",
                 "grupo_muscular": "Pecho y triceps",
-                "foco": "Hipertrofia progresiva",
+                "foco": "Hipertrofia moderada",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 2",
                 "grupo_muscular": "Espalda y biceps",
-                "foco": "Hipertrofia progresiva",
+                "foco": "Hipertrofia moderada",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 3",
                 "grupo_muscular": "Piernas",
-                "foco": "Hipertrofia progresiva",
+                "foco": "Hipertrofia moderada",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 4",
                 "grupo_muscular": "Hombros y abdomen",
-                "foco": "Hipertrofia progresiva",
+                "foco": "Hipertrofia moderada",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 5",
                 "grupo_muscular": "Cuerpo completo",
-                "foco": "Hipertrofia progresiva",
+                "foco": "Hipertrofia moderada",
                 "ejercicios": []
               }
             ]
           },
           "alta": {
-            "justificacion": "Entrenamiento intenso para maximizar el crecimiento muscular.",
+            "justificacion": "Desafía tus límites con cargas altas y un volumen significativo.",
             "dias": [
               {
                 "dia": "Dia 1",
                 "grupo_muscular": "Pecho y triceps",
-                "foco": "Hipertrofia avanzada",
+                "foco": "Hipertrofia intensa",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 2",
                 "grupo_muscular": "Espalda y biceps",
-                "foco": "Hipertrofia avanzada",
+                "foco": "Hipertrofia intensa",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 3",
                 "grupo_muscular": "Piernas",
-                "foco": "Hipertrofia avanzada",
+                "foco": "Hipertrofia intensa",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 4",
                 "grupo_muscular": "Hombros y abdomen",
-                "foco": "Hipertrofia avanzada",
+                "foco": "Hipertrofia intensa",
                 "ejercicios": []
               },
               {
                 "dia": "Dia 5",
                 "grupo_muscular": "Cuerpo completo",
-                "foco": "Hipertrofia avanzada",
+                "foco": "Hipertrofia intensa",
                 "ejercicios": []
               }
             ]
@@ -778,11 +786,147 @@
       },
       "preferencias": {
         "equipamiento": [
-          "mancuernas"
+          "maquinas"
         ],
         "formatos": [],
         "restricciones": [],
-        "texto_libre": "hola edad 25 años, mido 175, peso 75 quiero ganar masa muscular y puedo entrenr 5 dias por smena, la rutina debe ser solo con mancuernas"
+        "texto_libre": "ahora cambiala a 4 dias y solo maquinas"
+      },
+      "sesiones": [],
+      "metricas_corporales": [],
+      "racha_dias": 0,
+      "ultimo_entreno_fecha": null
+    },
+    "google:update-flow-2": {
+      "chat": [
+        {
+          "role": "user",
+          "content": "ahora cambiala a 4 dias y solo maquinas"
+        }
+      ],
+      "ultimo_resultado": {
+        "mensaje_coach": "¡Excelente decisión de enfocarte en ganar masa muscular! Recuerda mantener una buena técnica en cada repetición y controla el tempo. Progresar semanalmente en peso o repeticiones es clave para tus resultados. ¡Vamos a por ello!",
+        "estado": "rutina_lista",
+        "campos_faltantes": [],
+        "perfil_detectado": {
+          "edad": 25,
+          "estatura": 175,
+          "peso": 75,
+          "objetivo": "ganar masa muscular",
+          "dias_disponibles": 4
+        },
+        "preferencias_detectadas": {
+          "equipamiento": [
+            "maquinas"
+          ],
+          "formatos": [],
+          "restricciones": [],
+          "texto_libre": "ahora cambiala a 4 dias y solo maquinas"
+        },
+        "planes_por_intensidad": {
+          "baja": {
+            "justificacion": "Ideal para familiarizarse con las máquinas y técnica.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia tecnica",
+                "ejercicios": []
+              }
+            ]
+          },
+          "media": {
+            "justificacion": "Aumenta la carga y el volumen para un progreso efectivo.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia progresiva",
+                "ejercicios": []
+              }
+            ]
+          },
+          "alta": {
+            "justificacion": "Maximiza el esfuerzo para un crecimiento muscular óptimo.",
+            "dias": [
+              {
+                "dia": "Dia 1",
+                "grupo_muscular": "Pecho y triceps",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 2",
+                "grupo_muscular": "Espalda y biceps",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 3",
+                "grupo_muscular": "Piernas",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              },
+              {
+                "dia": "Dia 4",
+                "grupo_muscular": "Hombros y abdomen",
+                "foco": "Hipertrofia máxima",
+                "ejercicios": []
+              }
+            ]
+          }
+        }
+      },
+      "perfil": {
+        "edad": 25,
+        "estatura": 175,
+        "peso": 75,
+        "objetivo": "ganar masa muscular",
+        "dias_disponibles": 4
+      },
+      "preferencias": {
+        "equipamiento": [
+          "maquinas"
+        ],
+        "formatos": [],
+        "restricciones": [],
+        "texto_libre": "ahora cambiala a 4 dias y solo maquinas"
       },
       "sesiones": [],
       "metricas_corporales": [],

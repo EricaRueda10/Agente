@@ -21,7 +21,7 @@ const INITIAL_CHAT: ChatMessage[] = [
   {
     role: "assistant",
     content:
-      "Hola, soy tu Fit Coach. Para empezar, dime tu edad, estatura, peso, objetivo y cuantos dias puedes entrenar por semana.",
+      "Hola, soy tu Fit Coach. Para arrancar rapido, cuentame edad, estatura, peso, objetivo y dias por semana (en el orden que quieras).",
   },
 ];
 
@@ -69,6 +69,9 @@ export default function Home() {
   const [errorAuth, setErrorAuth] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [diasEnCarga, setDiasEnCarga] = useState<string[]>([]);
+  const [reiniciando, setReiniciando] = useState(false);
+  const [mensajeSistema, setMensajeSistema] = useState("");
   const [authUser, setAuthUser] = useState<GoogleSessionUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const chatRef = useRef<HTMLDivElement | null>(null);
@@ -131,6 +134,8 @@ export default function Home() {
       setChat(INITIAL_CHAT);
       setResultado(null);
       setError("");
+      setDiasEnCarga([]);
+      setMensajeSistema("");
       return;
     }
 
@@ -209,6 +214,7 @@ export default function Home() {
     }
 
     detallesEnCursoRef.current.add(key);
+    setDiasEnCarga((prev) => (prev.includes(diaPlan.dia) ? prev : [...prev, diaPlan.dia]));
     setLoadingDetalle(true);
     try {
       const res = await fetch("http://127.0.0.1:8000/agente/chat/detalle-dia", {
@@ -276,6 +282,7 @@ export default function Home() {
       });
     } finally {
       detallesEnCursoRef.current.delete(key);
+      setDiasEnCarga((prev) => prev.filter((dia) => dia !== diaPlan.dia));
       if (detallesEnCursoRef.current.size === 0) {
         setLoadingDetalle(false);
       }
@@ -402,6 +409,7 @@ export default function Home() {
               const resultadoCoach: ResultadoCoach = parsed.resultado;
               detallesEnCursoRef.current.clear();
               detallesCargadosRef.current.clear();
+              setDiasEnCarga([]);
               setResultado(resultadoCoach);
 
               const primerDia =
@@ -432,6 +440,7 @@ export default function Home() {
               if (resultadoPosible) {
                 detallesEnCursoRef.current.clear();
                 detallesCargadosRef.current.clear();
+                setDiasEnCarga([]);
                 setError("");
                 setResultado(resultadoPosible);
 
@@ -497,8 +506,51 @@ export default function Home() {
     setResultado(null);
     setChat(INITIAL_CHAT);
     setError("");
+    setDiasEnCarga([]);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(GOOGLE_USER_KEY);
+    }
+  };
+
+  const reiniciarAgente = async () => {
+    if (!userIdActual || reiniciando) {
+      return;
+    }
+
+    setReiniciando(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/agente/chat/reiniciar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: userIdActual }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          setError("Tu backend no tiene la ruta de reinicio cargada. Reinicia el backend y vuelve a intentar.");
+        } else {
+          setError("No se pudo reiniciar el agente. Intenta de nuevo.");
+        }
+        return;
+      }
+
+      detallesEnCursoRef.current.clear();
+      detallesCargadosRef.current.clear();
+      setDiasEnCarga([]);
+      setMensaje("");
+      setError("");
+      setResultado(null);
+      setDiaActivo("");
+      setIntensidadActiva("media");
+      setChat(INITIAL_CHAT);
+      setMensajeSistema("Agente reiniciado correctamente. La conversacion comenzo desde cero.");
+      window.setTimeout(() => setMensajeSistema(""), 4500);
+    } catch {
+      setError("No hay conexion con el backend en http://127.0.0.1:8000");
+    } finally {
+      setReiniciando(false);
     }
   };
 
@@ -520,12 +572,21 @@ export default function Home() {
 
       <div className="flex flex-col items-start sm:items-end gap-2">
         {authUser ? (
-          <button
-            onClick={cerrarSesion}
-            className="px-3 py-2 rounded-md text-sm font-semibold bg-red-500 text-black hover:brightness-110"
-          >
-            Cerrar sesion
-          </button>
+          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+            <button
+              onClick={reiniciarAgente}
+              disabled={reiniciando}
+              className="px-3 py-2 rounded-md text-sm font-semibold bg-amber-400 text-black hover:brightness-110 disabled:opacity-60"
+            >
+              {reiniciando ? "Reiniciando..." : "Reiniciar agente"}
+            </button>
+            <button
+              onClick={cerrarSesion}
+              className="px-3 py-2 rounded-md text-sm font-semibold bg-red-500 text-black hover:brightness-110"
+            >
+              Cerrar sesion
+            </button>
+          </div>
         ) : !googleClientEnabled ? (
           <p className="text-xs text-amber-300">
             Configura NEXT_PUBLIC_GOOGLE_CLIENT_ID para habilitar login con Google.
@@ -541,6 +602,7 @@ export default function Home() {
   return (
     <FitCoachView
       topBar={topBar}
+      systemMessage={mensajeSistema}
       chatHabilitado={chatHabilitado}
       mensaje={mensaje}
       chat={chat}
@@ -550,6 +612,7 @@ export default function Home() {
       error={error}
       loading={loading}
       loadingDetalle={loadingDetalle}
+      diasEnCarga={diasEnCarga}
       tieneRutina={tieneRutina}
       planActivo={planActivo}
       diaSeleccionado={diaSeleccionado}

@@ -119,49 +119,65 @@ def _normalizar_texto(texto):
 
 
 def _extraer_preferencias_chat(historial_chat):
-    texto_usuario = " ".join(
-        m.get("content", "") for m in historial_chat if m.get("role") == "user"
-    )
-    texto = _normalizar_texto(texto_usuario)
-
     equipamiento = []
     formatos = []
     restricciones = []
+    mensajes_usuario = [m.get("content", "") for m in historial_chat if m.get("role") == "user"]
+    for mensaje in mensajes_usuario:
+        texto = _normalizar_texto(mensaje)
 
-    if "mancuerna" in texto or "mancuernas" in texto:
-        equipamiento.append("mancuernas")
-    if "maquina" in texto or "maquinas" in texto:
-        equipamiento.append("maquinas")
-    if "barra" in texto:
-        equipamiento.append("barra")
-    if "peso corporal" in texto or "calistenia" in texto:
-        equipamiento.append("peso_corporal")
-    if "banda" in texto or "bandas" in texto or "liga" in texto:
-        equipamiento.append("bandas")
+        if any(
+            frase in texto
+            for frase in (
+                "sin ninguna preferencia",
+                "sin preferencia",
+                "reinicia la rutina",
+                "reinicia rutina",
+                "reiniciar la rutina",
+                "quitar preferencias",
+                "quita preferencias",
+            )
+        ):
+            equipamiento = []
+            formatos = []
+            restricciones = []
 
-    if "tabata" in texto:
-        formatos.append("tabata")
-    if "hiit" in texto:
-        formatos.append("hiit")
-    if "circuito" in texto:
-        formatos.append("circuito")
-    if "hipertrof" in texto:
-        formatos.append("hipertrofia")
-    if "fuerza" in texto:
-        formatos.append("fuerza")
-    if "quema grasa" in texto or "quemar grasa" in texto:
-        formatos.append("quema_grasa")
-    if "funcional" in texto:
-        formatos.append("funcional")
+        if "mancuerna" in texto or "mancuernas" in texto:
+            equipamiento = ["mancuernas"]
+        if "maquina" in texto or "maquinas" in texto:
+            equipamiento = ["maquinas"]
+        if "barra" in texto:
+            equipamiento = ["barra"]
+        if "peso corporal" in texto or "calistenia" in texto:
+            equipamiento = ["peso_corporal"]
+        if "banda" in texto or "bandas" in texto or "liga" in texto:
+            equipamiento = ["bandas"]
 
-    if "sin salto" in texto or "sin saltos" in texto:
-        restricciones.append("sin_saltos")
-    if "bajo impacto" in texto:
-        restricciones.append("bajo_impacto")
-    if "rodilla" in texto:
-        restricciones.append("cuidar_rodilla")
-    if "espalda" in texto and "dolor" in texto:
-        restricciones.append("cuidar_espalda")
+        if "tabata" in texto:
+            formatos = ["tabata"]
+        if "hiit" in texto:
+            formatos = ["hiit"]
+        if "circuito" in texto:
+            formatos = ["circuito"]
+        if "hipertrof" in texto:
+            formatos = ["hipertrofia"]
+        if "fuerza" in texto:
+            formatos = ["fuerza"]
+        if "quema grasa" in texto or "quemar grasa" in texto:
+            formatos = ["quema_grasa"]
+        if "funcional" in texto:
+            formatos = ["funcional"]
+
+        if "sin salto" in texto or "sin saltos" in texto:
+            restricciones = ["sin_saltos"]
+        if "bajo impacto" in texto:
+            restricciones = ["bajo_impacto"]
+        if "rodilla" in texto:
+            restricciones = ["cuidar_rodilla"]
+        if "espalda" in texto and "dolor" in texto:
+            restricciones = ["cuidar_espalda"]
+
+    texto_usuario = " ".join(mensajes_usuario)
 
     return {
         "equipamiento": sorted(list(set(equipamiento))),
@@ -185,10 +201,60 @@ def _buscar_patron(texto, patrones):
     return None
 
 
-def _extraer_perfil_chat(historial_chat):
-    texto_original = _texto_usuario_completo(historial_chat)
-    texto = _normalizar_texto(texto_original)
+def _numero_palabra_a_entero(texto):
+    mapa = {
+        "uno": 1,
+        "una": 1,
+        "dos": 2,
+        "tres": 3,
+        "cuatro": 4,
+        "cinco": 5,
+        "seis": 6,
+        "siete": 7,
+    }
+    return mapa.get(texto.strip(), None)
 
+
+def _inferir_estatura_cm(valor_str, unidad):
+    try:
+        valor = float(valor_str.replace(",", "."))
+    except Exception:
+        return None
+
+    unidad = (unidad or "").strip().lower()
+    if unidad in {"cm", "centimetros", "centimetro"}:
+        cm = int(round(valor))
+        return cm if 120 <= cm <= 230 else None
+
+    if unidad in {"m", "metro", "metros"}:
+        cm = int(round(valor * 100))
+        return cm if 120 <= cm <= 230 else None
+
+    # Sin unidad explicita: inferencia por rango.
+    if valor >= 100:
+        cm = int(round(valor))
+        return cm if 120 <= cm <= 230 else None
+
+    if 1.2 <= valor <= 2.3:
+        cm = int(round(valor * 100))
+        return cm if 120 <= cm <= 230 else None
+
+    return None
+
+
+def _inferir_peso_kg(valor_str):
+    try:
+        valor = float(valor_str.replace(",", "."))
+    except Exception:
+        return None
+
+    kg = int(round(valor))
+    if 30 <= kg <= 300:
+        return kg
+    return None
+
+
+def _extraer_perfil_chat(historial_chat):
     edad = None
     estatura = None
     peso = None
@@ -260,10 +326,79 @@ def _extraer_perfil_chat(historial_chat):
         "recomposicion corporal",
         "mantenerme",
     ]
-    for obj in objetivos:
-        if obj in texto:
-            objetivo = obj
-            break
+    for mensaje in [m.get("content", "") for m in historial_chat if m.get("role") == "user"]:
+        texto = _normalizar_texto(mensaje)
+
+        match_edad = _buscar_patron(
+            texto,
+            [
+                r"(?:tengo|edad|cumpli|cumplo)\s*(\d{1,2})\s*anos",
+                r"(?:tengo|edad)\s*(\d{1,2})\b",
+                r"(\d{1,2})\s*anos",
+            ],
+        )
+        if match_edad:
+            valor_edad = int(match_edad.group(1))
+            if 12 <= valor_edad <= 90:
+                edad = valor_edad
+
+        # Altura con o sin unidad: "mido 1.75", "mido 1,75", "estatura 175", "altura 175 cm".
+        match_estatura = _buscar_patron(
+            texto,
+            [
+                r"(?:mido|estatura|altura)\s*(?:de\s*)?(\d{1,3}(?:[\.,]\d{1,2})?)\s*(cm|m|metros|metro|centimetros|centimetro)?",
+                r"(\d{3})\s*cm\b",
+                r"(1[\.,]\d{1,2})\b",
+            ],
+        )
+        if match_estatura:
+            valor_altura = match_estatura.group(1)
+            unidad_altura = match_estatura.group(2) if len(match_estatura.groups()) >= 2 else ""
+            altura_cm = _inferir_estatura_cm(valor_altura, unidad_altura)
+            if altura_cm:
+                estatura = altura_cm
+
+        # Peso con o sin kg explicito: "peso 75", "75 kg", "peso actual 74.5".
+        match_peso = _buscar_patron(
+            texto,
+            [
+                r"(?:peso|peso actual|mi peso es|estoy pesando)\s*(\d{2,3}(?:[\.,]\d{1,2})?)\s*(?:kg|kilo|kilos)?",
+                r"(\d{2,3}(?:[\.,]\d{1,2})?)\s*(?:kg|kilo|kilos)\b",
+            ],
+        )
+        if match_peso:
+            peso_kg = _inferir_peso_kg(match_peso.group(1))
+            if peso_kg:
+                peso = peso_kg
+
+        # Dias semanales con numero o palabra: "5 dias", "cinco dias", "puedo entrenar 4".
+        match_dias_num = _buscar_patron(
+            texto,
+            [
+                r"(?:puedo entrenar|entreno|entrenar|disponible)\s*(\d)\s*dias",
+                r"(\d)\s*dias\s*(?:por semana|a la semana)?",
+                r"(\d)\s*dias\b",
+            ],
+        )
+        if match_dias_num:
+            dias_valor = int(match_dias_num.group(1))
+            if 1 <= dias_valor <= 7:
+                dias_disponibles = dias_valor
+        else:
+            match_dias_txt = _buscar_patron(
+                texto,
+                [
+                    r"(uno|una|dos|tres|cuatro|cinco|seis|siete)\s*dias",
+                ],
+            )
+            if match_dias_txt:
+                dias_texto = _numero_palabra_a_entero(match_dias_txt.group(1))
+                if dias_texto:
+                    dias_disponibles = dias_texto
+
+        for obj in objetivos:
+            if obj in texto:
+                objetivo = obj
 
     return {
         "edad": edad,
@@ -276,11 +411,11 @@ def _extraer_perfil_chat(historial_chat):
 
 def _fusionar_perfiles(perfil_entrada, perfil_extraido):
     return {
-        "edad": perfil_entrada.get("edad") or perfil_extraido.get("edad"),
-        "estatura": perfil_entrada.get("estatura") or perfil_extraido.get("estatura"),
-        "peso": perfil_entrada.get("peso") or perfil_extraido.get("peso"),
-        "objetivo": perfil_entrada.get("objetivo") or perfil_extraido.get("objetivo"),
-        "dias_disponibles": perfil_entrada.get("dias_disponibles") or perfil_extraido.get("dias_disponibles"),
+        "edad": perfil_extraido.get("edad") if perfil_extraido.get("edad") is not None else perfil_entrada.get("edad"),
+        "estatura": perfil_extraido.get("estatura") if perfil_extraido.get("estatura") is not None else perfil_entrada.get("estatura"),
+        "peso": perfil_extraido.get("peso") if perfil_extraido.get("peso") is not None else perfil_entrada.get("peso"),
+        "objetivo": perfil_extraido.get("objetivo") if perfil_extraido.get("objetivo") else perfil_entrada.get("objetivo"),
+        "dias_disponibles": perfil_extraido.get("dias_disponibles") if perfil_extraido.get("dias_disponibles") is not None else perfil_entrada.get("dias_disponibles"),
     }
 
 
@@ -306,7 +441,108 @@ def _cache_key_plan(perfil, preferencias):
     )
 
 
-def _mensaje_faltantes(faltantes):
+def _detectar_intentos_campos(historial_chat):
+    texto = _normalizar_texto(_texto_usuario_completo(historial_chat))
+    intentos = {}
+
+    match_edad = _buscar_patron(
+        texto,
+        [
+            r"(?:tengo|edad|cumpli|cumplo)\s*(\d{1,2})\s*anos",
+            r"(\d{1,2})\s*anos",
+        ],
+    )
+    if match_edad:
+        edad_valor = int(match_edad.group(1))
+        if not (12 <= edad_valor <= 90):
+            intentos["edad"] = "rango"
+
+    match_estatura = _buscar_patron(
+        texto,
+        [
+            r"(?:mido|estatura|altura)\s*(?:de\s*)?(\d{1,3}(?:[\.,]\d{1,2})?)\s*(cm|m|metros|metro|centimetros|centimetro)?",
+            r"(\d{3})\s*cm\b",
+            r"(1[\.,]\d{1,2})\b",
+        ],
+    )
+    if match_estatura:
+        valor_altura = match_estatura.group(1)
+        unidad_altura = match_estatura.group(2) if len(match_estatura.groups()) >= 2 else ""
+        if _inferir_estatura_cm(valor_altura, unidad_altura) is None:
+            intentos["estatura"] = "formato"
+
+    match_peso = _buscar_patron(
+        texto,
+        [
+            r"(?:peso|peso actual|mi peso es|estoy pesando)\s*(\d{2,3}(?:[\.,]\d{1,2})?)\s*(?:kg|kilo|kilos)?",
+            r"(\d{2,3}(?:[\.,]\d{1,2})?)\s*(?:kg|kilo|kilos)\b",
+        ],
+    )
+    if match_peso and _inferir_peso_kg(match_peso.group(1)) is None:
+        intentos["peso"] = "formato"
+
+    match_dias_num = _buscar_patron(
+        texto,
+        [
+            r"(\d)\s*dias\b",
+        ],
+    )
+    if match_dias_num:
+        dias_valor = int(match_dias_num.group(1))
+        if not (1 <= dias_valor <= 7):
+            intentos["dias_disponibles"] = "rango"
+
+    return intentos
+
+
+def _resumen_campos_capturados(perfil):
+    partes = []
+    if perfil.get("edad"):
+        partes.append(f"edad {perfil.get('edad')}")
+    if perfil.get("estatura"):
+        partes.append(f"estatura {perfil.get('estatura')} cm")
+    if perfil.get("peso"):
+        partes.append(f"peso {perfil.get('peso')} kg")
+    if perfil.get("objetivo"):
+        partes.append(f"objetivo {perfil.get('objetivo')}")
+    if perfil.get("dias_disponibles"):
+        partes.append(f"dias {perfil.get('dias_disponibles')}")
+    return partes
+
+
+def _siguiente_campo_faltante(faltantes, perfil=None, intentos=None):
+    perfil = perfil or {}
+    intentos = intentos or {}
+
+    # Si el usuario intento dar un campo y fallo validacion, priorizar ese campo.
+    for campo in ("estatura", "peso", "dias_disponibles", "objetivo", "edad"):
+        if campo in faltantes and campo in intentos:
+            return campo
+
+    # Flujo mas natural: si ya hay datos fisicos u objetivo, no bloquear por edad de inmediato.
+    tiene_contexto = any(
+        [
+            perfil.get("estatura"),
+            perfil.get("peso"),
+            perfil.get("objetivo"),
+            perfil.get("dias_disponibles"),
+        ]
+    )
+
+    if tiene_contexto:
+        orden = ["estatura", "peso", "objetivo", "dias_disponibles", "edad"]
+    else:
+        orden = ["edad", "estatura", "peso", "objetivo", "dias_disponibles"]
+
+    for campo in orden:
+        if campo in faltantes:
+            return campo
+    return faltantes[0] if faltantes else None
+
+
+def _mensaje_faltantes(faltantes, perfil=None, intentos=None):
+    intentos = intentos or {}
+    perfil = perfil or {}
     etiquetas = {
         "edad": "tu edad",
         "estatura": "tu estatura en cm",
@@ -314,8 +550,55 @@ def _mensaje_faltantes(faltantes):
         "objetivo": "tu objetivo principal",
         "dias_disponibles": "cuantos dias puedes entrenar por semana",
     }
-    campos = [etiquetas.get(campo, campo) for campo in faltantes]
-    return "Para armarte un plan de coach real, necesito: " + ", ".join(campos) + "."
+
+    ayudas = {
+        "edad": "Edad: ejemplo 25 anos.",
+        "estatura": "Estatura: puedes decir 175, 175 cm, 1.75 o 1,75.",
+        "peso": "Peso: puedes decir 75 o 75 kg.",
+        "objetivo": "Objetivo: ejemplo ganar masa muscular, perder grasa o fuerza.",
+        "dias_disponibles": "Dias por semana: ejemplo 3, 4, 5 o seis dias.",
+    }
+
+    preguntas = {
+        "edad": "¿Que edad tienes?",
+        "estatura": "¿Cual es tu estatura?",
+        "peso": "¿Cual es tu peso actual?",
+        "objetivo": "¿Cual es tu objetivo principal?",
+        "dias_disponibles": "¿Cuantos dias por semana puedes entrenar?",
+    }
+
+    capturados = _resumen_campos_capturados(perfil)
+    prefijo_capturados = ""
+    if capturados:
+        prefijo_capturados = "Ya tengo: " + ", ".join(capturados) + ". "
+
+    campo_objetivo = _siguiente_campo_faltante(faltantes, perfil, intentos)
+    if not campo_objetivo:
+        return "Perfecto, ya tengo todo lo necesario para construir tu rutina."
+
+    prefijo = ""
+    if campo_objetivo in intentos:
+        prefijo = "Te entendi, pero ese dato no lo pude validar. "
+
+    if not capturados:
+        return (
+            "Vamos paso a paso para hacerlo facil. "
+            + preguntas.get(campo_objetivo, "")
+            + " "
+            + ayudas.get(campo_objetivo, "")
+            + " Si quieres, tambien puedes mandarme varios datos en un solo mensaje."
+        )
+
+    return (
+        prefijo_capturados
+        + prefijo
+        + "Ahora solo dime "
+        + etiquetas.get(campo_objetivo, campo_objetivo)
+        + ". "
+        + preguntas.get(campo_objetivo, "")
+        + " "
+        + ayudas.get(campo_objetivo, "")
+    )
 
 
 def _planes_vacios():
@@ -701,6 +984,7 @@ def generar_plan_conversacional(perfil, historial_chat):
     perfil_final = _fusionar_con_historial(perfil_final, historial_chat)
 
     faltantes = _campos_faltantes(perfil_final)
+    intentos = _detectar_intentos_campos(historial_chat)
     preferencias = _extraer_preferencias_chat(historial_chat)
 
     if not faltantes:
@@ -736,7 +1020,7 @@ def generar_plan_conversacional(perfil, historial_chat):
         }
 
     return {
-        "mensaje_coach": _mensaje_faltantes(faltantes),
+        "mensaje_coach": _mensaje_faltantes(faltantes, perfil_final, intentos),
         "estado": "faltan_datos",
         "campos_faltantes": faltantes,
         "perfil_detectado": perfil_final,
