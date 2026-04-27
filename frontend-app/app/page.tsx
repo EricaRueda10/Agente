@@ -327,78 +327,145 @@ export default function Home() {
     setChat([...nuevoChat, { role: "assistant", content: "" }]);
     setMensaje("");
 
-   try {
-  const res = await fetch("https://agente-backend-65g2.onrender.com/agente/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      user_id: userIdActual || undefined,
-      historial_chat: nuevoChat,
-    }),
-  });
+    try {
+      const res = await fetch("https://agente-backend-65g2.onrender.com/agente/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: userIdActual || undefined,
+          historial_chat: nuevoChat,
+        }),
+      });
 
-  if (!res.ok) {
-    setError("No se pudo procesar el mensaje. Revisa backend y API key.");
-    setChat((prev) => {
-      const next = [...prev];
-      const last = next[next.length - 1];
-      if (last?.role === "assistant") {
-        next[next.length - 1] = {
-          ...last,
-          content: "No pude responder correctamente. Intenta de nuevo.",
-        };
+      if (!res.ok || !res.body) {
+        setError("No se pudo procesar el mensaje. Revisa backend y API key.");
+        setChat((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === "assistant") {
+            next[next.length - 1] = {
+              ...last,
+              content: "No pude responder correctamente. Intenta de nuevo.",
+            };
+          }
+          return next;
+        });
+        return;
       }
-      return next;
-    });
-    return;
-  }
 
-  const data = await res.json();
-  const resultadoCoach: ResultadoCoach = data.resultado;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-  // limpiar estados
-  detallesEnCursoRef.current.clear();
-  detallesCargadosRef.current.clear();
-  setDiasEnCarga([]);
-  setError("");
-
-  // guardar resultado
-  setResultado(resultadoCoach);
-
-  // cargar primer día automáticamente
-  const primerDia =
-    resultadoCoach.planes_por_intensidad?.[intensidadActiva]?.dias?.[0];
-
-  if (
-    resultadoCoach.estado === "rutina_lista" &&
-    primerDia &&
-    (!primerDia.ejercicios || primerDia.ejercicios.length === 0)
-  ) {
-    void cargarDetalleDia(primerDia, intensidadActiva, resultadoCoach);
-  }
-
-  // actualizar respuesta del chat
-  setChat((prev) => {
-    const next = [...prev];
-    const last = next[next.length - 1];
-
-    if (last?.role === "assistant") {
-      next[next.length - 1] = {
-        ...last,
-        content: resultadoCoach.mensaje_coach || "Listo.",
+      const appendAssistantText = (chunk: string) => {
+        setChat((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === "assistant") {
+            next[next.length - 1] = {
+              ...last,
+              content: `${last.content}${chunk}`,
+            };
+          }
+          return next;
+        });
       };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let eventBoundary = buffer.indexOf("\n\n");
+        while (eventBoundary !== -1) {
+          const rawEvent = buffer.slice(0, eventBoundary);
+          buffer = buffer.slice(eventBoundary + 2);
+
+          let eventType = "message";
+          let dataLine = "";
+
+          for (const line of rawEvent.split("\n")) {
+            if (line.startsWith("event:")) {
+              eventType = line.slice(6).trim();
+            }
+            if (line.startsWith("data:")) {
+              dataLine += line.slice(5).trim();
+            }
+          }
+
+          if (dataLine) {
+            const parsed = JSON.parse(dataLine);
+
+            if (eventType === "token") {
+              appendAssistantText(parsed.chunk || "");
+            }
+
+            if (eventType === "result") {
+              const resultadoCoach: ResultadoCoach = parsed.resultado;
+              detallesEnCursoRef.current.clear();
+              detallesCargadosRef.current.clear();
+              setDiasEnCarga([]);
+              setResultado(resultadoCoach);
+
+              const primerDia =
+                resultadoCoach.planes_por_intensidad?.[intensidadActiva]?.dias?.[0];
+              if (
+                resultadoCoach.estado === "rutina_lista" &&
+                primerDia &&
+                (!primerDia.ejercicios || primerDia.ejercicios.length === 0)
+              ) {
+                void cargarDetalleDia(primerDia, intensidadActiva, resultadoCoach);
+              }
+
+              setChat((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === "assistant" && !last.content.trim()) {
+                  next[next.length - 1] = {
+                    ...last,
+                    content: resultadoCoach.mensaje_coach || "Listo.",
+                  };
+                }
+                return next;
+              });
+            }
+
+            if (eventType === "error") {
+              const resultadoPosible = intentarParsearResultado(parsed.message);
+              if (resultadoPosible) {
+                detallesEnCursoRef.current.clear();
+                detallesCargadosRef.current.clear();
+                setDiasEnCarga([]);
+                setError("");
+                setResultado(resultadoPosible);
+
+                const primerDia = resultadoPosible.planes_por_intensidad?.[intensidadActiva]?.dias?.[0];
+                if (
+                  resultadoPosible.estado === "rutina_lista" &&
+                  primerDia &&
+                  (!primerDia.ejercicios || primerDia.ejercicios.length === 0)
+                ) {
+                  void cargarDetalleDia(primerDia, intensidadActiva, resultadoPosible);
+                }
+              } else {
+                setError(parsed.message || "No se pudo procesar el mensaje.");
+              }
+            }
+          }
+
+          eventBoundary = buffer.indexOf("\n\n");
+        }
+      }
+    } catch {
+      setError("No hay conexion con el backend en https://agente-backend-65g2.onrender.com");
+    } finally {
+      setLoading(false);
     }
-
-    return next;
-  });
-
-} catch {
-  setError("No hay conexion con el backend en https://agente-backend-65g2.onrender.com");
-} finally {
-  setLoading(false);
-}
   };
 
   const tieneRutina = resultado?.estado === "rutina_lista";
@@ -556,4 +623,4 @@ export default function Home() {
       onDiaChange={setDiaActivo}
     />
   );
-  }
+}
