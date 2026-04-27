@@ -326,10 +326,6 @@ export default function FitCoachView({
 
                 {tieneRutina && (
                   <>
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/AB
                     <div className="p-3 bg-gray-800/70 rounded-lg border border-gray-600">
                       <p className="text-xs text-gray-400 mb-2">Selecciona dia</p>
                       <div className="flex flex-wrap gap-2">
