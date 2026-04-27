@@ -5,13 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
 import json
+import os
 from progreso_store import get_contexto_chat, save_contexto_chat, reiniciar_contexto_chat
 
 app = FastAPI()
 
+frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[frontend_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
